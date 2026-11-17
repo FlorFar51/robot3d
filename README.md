@@ -2,7 +2,9 @@
 
 Le jeu détecte automatiquement un téléphone ou un écran tactile.
 
-- Téléphone : joystick analogique, bouton R pour remettre le robot et bouton N pour recommencer. Les indications clavier sont retirées.
+- Téléphone : boutons tactiles ZQSD, bouton R pour remettre le robot et bouton N pour recommencer. Les indications clavier sont retirées.
 - Ordinateur : ZQSD/flèches, R pour remettre le robot et N pour recommencer.
 
 Dépose les quatre fichiers à la racine de ton dépôt GitHub Pages.
+
+La rotation utilise maintenant une vitesse angulaire limitée et freinée afin d’éviter que le robot continue de tourner ou pivote trop brutalement.
