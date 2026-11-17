@@ -66,7 +66,7 @@ function reset(){robot.setTranslation({x:0,y:1.25,z:10},true);robot.setRotation(
 function saveControls(){try{localStorage.setItem('robotPushLabControls',JSON.stringify({keys:keyBindings,pad:padBindings,invertThrottle,invertSteering}))}catch{}}
 function keyName(k){if(k===' ')return 'ESPACE';if(k.startsWith('Arrow'))return k.replace('Arrow','').toUpperCase();return k.length===1?k.toUpperCase():k}
 function renderControls(){document.querySelectorAll('[data-keybind]').forEach(b=>b.textContent=keyName(keyBindings[b.dataset.keybind]));const legend=document.querySelector('#keyboardLegend');if(legend)legend.textContent=keyName(keyBindings.forward)+' avancer · '+keyName(keyBindings.back)+' reculer · '+keyName(keyBindings.left)+' gauche · '+keyName(keyBindings.right)+' droite';document.querySelectorAll('[data-axis]').forEach(b=>b.textContent='AXE '+(padBindings[b.dataset.axis].axis+1));document.querySelectorAll('[data-padbutton]').forEach(b=>b.textContent='BOUTON '+(padBindings[b.dataset.padbutton]+1));document.querySelector('#invertThrottle').checked=invertThrottle;document.querySelector('#invertSteering').checked=invertSteering}
-function scanPad(){const pads=navigator.getGamepads?.()||[];activePad=[...pads].find(p=>p&&p.connected)||null;if(activePad){if(padBindings.throttle.center===undefined)padBindings.throttle.center=activePad.axes[padBindings.throttle.axis]||0;if(padBindings.steering.center===undefined)padBindings.steering.center=activePad.axes[padBindings.steering.axis]||0;saveControls()}const box=document.querySelector('#padStatus');if(!box)return;if(activePad){box.classList.add('connected');box.querySelector('b').textContent='MANETTE CONNECTÉE';box.querySelector('small').textContent=activePad.id+' · '+activePad.axes.length+' axes · '+activePad.buttons.length+' boutons'}else{box.classList.remove('connected');box.querySelector('b').textContent='AUCUNE MANETTE DÉTECTÉE';box.querySelector('small').textContent='Branche ta manette puis appuie sur un bouton.'}}
+function scanPad(){const pads=navigator.getGamepads?.()||[];activePad=[...pads].find(p=>p&&p.connected)||null;if(activePad){let calibrated=false;if(padBindings.throttle.center===undefined){padBindings.throttle.center=activePad.axes[padBindings.throttle.axis]||0;calibrated=true}if(padBindings.steering.center===undefined){padBindings.steering.center=activePad.axes[padBindings.steering.axis]||0;calibrated=true}if(calibrated)saveControls()}const box=document.querySelector('#padStatus');if(!box)return;if(activePad){box.classList.add('connected');box.querySelector('b').textContent='MANETTE CONNECTÉE';box.querySelector('small').textContent=activePad.id+' · '+activePad.axes.length+' axes · '+activePad.buttons.length+' boutons'}else{box.classList.remove('connected');box.querySelector('b').textContent='AUCUNE MANETTE DÉTECTÉE';box.querySelector('small').textContent='Branche ta manette puis appuie sur un bouton.'}}
 function openCommandPanel(){document.querySelector('#commandsPanel').classList.remove('hidden');scanPad();renderControls()}
 document.querySelector('#gameCommands').onclick=openCommandPanel;
 document.querySelector('#gameSettings').onclick=()=>{document.querySelector(hockeyMode?'#hockeyOptions':'#options').classList.remove('hidden')};
@@ -91,16 +91,19 @@ function readPadInputs(){
  let captured=false;
  if(waitingPad){
   if(waitingPad.dataset.axis){
-   let chosen=-1,peak=.55;
-   for(let i=0;i<axes.length;i++){const v=Math.abs(axes[i]||0);if(v>peak){peak=v;chosen=i}}
-   if(chosen>=0){const name=waitingPad.dataset.axis;padBindings[name]={axis:chosen,invert:Math.sign(axes[chosen])||1};waitingPad.classList.remove('waiting');waitingPad=null;renderControls();saveControls();document.querySelector('#assignHint').textContent='Axe '+(chosen+1)+' affecté. Tu peux vérifier le signal dans les jauges.';captured=true}
+   let chosen=-1,peak=.35,delta=0;
+   for(let i=0;i<axes.length;i++){const d=(axes[i]||0)-(padAxisBaseline?.[i]??0);if(Math.abs(d)>peak){peak=Math.abs(d);chosen=i;delta=d}}
+   if(chosen>=0){const name=waitingPad.dataset.axis;padBindings[name]={axis:chosen,invert:Math.sign(delta)||1,center:padAxisBaseline?.[chosen]??0};waitingPad.classList.remove('waiting');waitingPad=null;padAxisBaseline=null;renderControls();saveControls();document.querySelector('#assignHint').textContent='Axe '+(chosen+1)+' affecté. La position de repos est calibrée.';captured=true}
   }else{
    const chosen=buttons.findIndex(x=>x&&x.pressed);
-   if(chosen>=0){padBindings[waitingPad.dataset.padbutton]=chosen;waitingPad.classList.remove('waiting');waitingPad=null;renderControls();saveControls();document.querySelector('#assignHint').textContent='Bouton '+(chosen+1)+' affecté et sauvegardé.';captured=true}
+   if(chosen>=0){padBindings[waitingPad.dataset.padbutton]=chosen;waitingPad.classList.remove('waiting');waitingPad=null;padAxisBaseline=null;renderControls();saveControls();document.querySelector('#assignHint').textContent='Bouton '+(chosen+1)+' affecté et sauvegardé.';captured=true}
   }
  }
- let f=(axes[padBindings.throttle.axis]||0)*padBindings.throttle.invert*(invertThrottle?-1:1);
- let t=(axes[padBindings.steering.axis]||0)*padBindings.steering.invert*(invertSteering?-1:1);
+ const throttleCenter=padBindings.throttle.center??0,steeringCenter=padBindings.steering.center??0;
+ let rawF=(axes[padBindings.throttle.axis]||0)-throttleCenter,rawT=(axes[padBindings.steering.axis]||0)-steeringCenter;
+ if(Math.abs(throttleCenter)>.7)rawF/=2;if(Math.abs(steeringCenter)>.7)rawT/=2;
+ let f=rawF*padBindings.throttle.invert*(invertThrottle?-1:1);
+ let t=rawT*padBindings.steering.invert*(invertSteering?-1:1);
  if(Math.abs(f)<.12)f=0;if(Math.abs(t)<.12)t=0;
  if(fm)fm.value=f;if(tm)tm.value=t;if(fv)fv.textContent=Math.round(f*100)+' %';if(tv)tv.textContent=Math.round(t*100)+' %';
  if(!captured){
