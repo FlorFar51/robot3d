@@ -42,7 +42,7 @@ fieldWidth:{label:'Largeur du terrain',unit:'m',min:12,max:34,step:1,value:24},f
 };
 Object.assign(SETTINGS_DEF,HOCKEY_DEF);
 let settings=Object.fromEntries(Object.entries(SETTINGS_DEF).map(([k,v])=>[k,v.value]));const launchParams=new URLSearchParams(location.search);for(const key of Object.keys(settings))if(launchParams.has(key))settings[key]=Number(launchParams.get(key));
-const grid=document.querySelector('#optionGrid');
+let grid=document.querySelector('#optionGrid');if(!grid){grid=document.createElement('div');grid.id='optionGrid';const card=document.querySelector('#options .optionsCard');if(card)card.prepend(grid);else{const options=document.querySelector('#options');if(options)options.appendChild(grid)}}
 for(const [key,def] of Object.entries(SETTINGS_DEF)){const row=document.createElement('div');row.className='option';row.innerHTML=`<label><span>${def.label}</span><output id="out-${key}">${settings[key]} ${def.unit}</output></label><input id="opt-${key}" type="range" min="${def.min}" max="${def.max}" step="${def.step}" value="${settings[key]}">`;grid.appendChild(row);const input=row.querySelector('input'),output=row.querySelector('output');input.addEventListener('input',()=>{settings[key]=Number(input.value);output.textContent=`${input.value} ${def.unit}`})}
 
 function exportCurrentConfig(button){
