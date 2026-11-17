@@ -1,10 +1,10 @@
-# Robot Push Lab V13
+# Robot Push Lab V14
 
-## Reconstruction fiable
-Les paramètres sont encodés dans l'URL au clic sur JOUER/IA, puis la page recharge et construit directement les vrais meshes, colliders, roues et crochets avec ces valeurs. Le visuel et la physique utilisent donc les mêmes dimensions.
+## Sections séparées
+- Laboratoire et tests : test manuel, test IA, palets multiples, diagnostic et options physiques.
+- Mode Hockey : bouton et page de paramètres dédiés.
 
-## Diagnostic
-Bouton DIAG : rayons des deux roues, contacts vert/rouge, centre de masse rouge, flèche de force moteur, compteur de contacts et état du robot.
+## Hockey paramétrable
+Terrain (largeur, longueur, murs), buts (largeur, profondeur, hauteur), match (durée, score gagnant, délai), palet (diamètre, hauteur, masse, rebond, glissement), robot (force, rotation, frein) et caméra (hauteur, décalage).
 
-## Palets
-Paramètres : diamètre, hauteur, rebondissement, glissement/friction et nombre de palets. Les palets sont des cylindres dynamiques Rapier avec CCD.
+Le mode Hockey utilise un seul palet central, deux buts, un score et un chronomètre. Le laboratoire conserve ses propres palets et obstacles.
