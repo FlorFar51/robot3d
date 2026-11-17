@@ -18,3 +18,10 @@ La rotation utilise maintenant une vitesse angulaire limitée et freinée afin d
 - Ajout du mode caméra ISO fixe, en hauteur et légèrement de côté.
 - Bouton CAM sur téléphone et touche C sur ordinateur pour alterner SUIVI / ISO.
 - Numéro de version visible dans le titre.
+
+
+## V3
+- Menu d'accueil avant le chargement du jeu.
+- Bouton JOUER : contrôle manuel identique à la V2.
+- Bouton MODE IA : le robot sélectionne la caisse active la plus proche, pivote vers elle et avance pour la pousser.
+- Le mode IA démarre avec la caméra isométrique pour observer toute l'arène.
