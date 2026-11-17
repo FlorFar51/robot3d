@@ -33,3 +33,10 @@ La rotation utilise maintenant une vitesse angulaire limitée et freinée afin d
 - La vitesse horizontale est limitée pendant une chute ou un renversement pour éviter les départs incontrôlés.
 - Ajout du CCD Rapier pour limiter les traversées et impulsions extrêmes lors des chocs rapides.
 - Amortissement linéaire et angulaire renforcé.
+
+
+## V5
+- Retour du joystick analogique sur téléphone.
+- Vitesse maximale de l'IA réduite à 9 m/s, contre 21 m/s pour le joueur.
+- Force moteur de l'IA divisée par deux.
+- L'IA change aléatoirement de direction toutes les 0,45 à 1,60 secondes afin de provoquer davantage de rotations, chocs et renversements observables.
