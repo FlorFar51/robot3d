@@ -6,7 +6,7 @@ const scene=new THREE.Scene();scene.background=new THREE.Color(0x07101d);scene.f
 let fixedCamera=false,gameStarted=false,aiMode=false;
 const world=new RAPIER.World({x:0,y:-9.81,z:0});world.timestep=1/60;const objects=[],crates=[],keys={};let score=0;const material=c=>new THREE.MeshStandardMaterial({color:c,roughness:.7,metalness:.15});
 function box(size,pos,color,type='fixed',mass=1){const mesh=new THREE.Mesh(new THREE.BoxGeometry(...size),material(color));mesh.castShadow=mesh.receiveShadow=true;scene.add(mesh);const desc=(type==='dynamic'?RAPIER.RigidBodyDesc.dynamic():RAPIER.RigidBodyDesc.fixed()).setTranslation(...pos);const body=world.createRigidBody(desc);const col=RAPIER.ColliderDesc.cuboid(size[0]/2,size[1]/2,size[2]/2).setFriction(1.1).setRestitution(.08);if(type==='dynamic')col.setMass(mass);world.createCollider(col,body);const o={mesh,body};objects.push(o);return o}
-box([34,.5,34],[0,-.25,0],0x19334a);for(const v of [[0,-17,34,.5],[0,17,34,.5],[-17,0,.5,34],[17,0,.5,34]])box([v[2],2,v[3]],[v[0],1,v[1]],0x274f68);const ramp=box([7,.7,5],[7,.55,3],0x547b91);ramp.body.setRotation({x:-0.14,y:0,z:0,w:0.9902},true);const robot=box([2.3,.7,3.4],[0,1.1,10],0x1aa4dc,'dynamic',18);robot.body.setLinearDamping(1.35);robot.body.setAngularDamping(3.8);robot.body.enableCcd(true);const cab=new THREE.Mesh(new THREE.BoxGeometry(1.5,.55,1.5),material(0xa7ebff));cab.position.y=.6;robot.mesh.add(cab);const bump=new THREE.Mesh(new THREE.BoxGeometry(2.7,.35,.35),material(0xff516f));bump.position.set(0,0,-1.85);robot.mesh.add(bump);for(let i=0;i<10;i++){const a=i/10*Math.PI*2,r=5+(i%3)*2;crates.push(box([1.4,1.4,1.4],[Math.cos(a)*r,1,Math.sin(a)*r-2],i%2?0xf49b43:0xb675df,'dynamic',3+i*.5))}
+box([34,.5,34],[0,-.25,0],0x19334a);for(const v of [[0,-17,34,.5],[0,17,34,.5],[-17,0,.5,34],[17,0,.5,34]])box([v[2],2,v[3]],[v[0],1,v[1]],0x274f68);const ramp=box([7,.7,5],[7,.55,3],0x547b91);ramp.body.setRotation({x:-0.14,y:0,z:0,w:0.9902},true);const robot=box([2.3,.7,3.4],[0,1.1,10],0x1aa4dc,'dynamic',18);robot.body.setLinearDamping(1.8);robot.body.setAngularDamping(5.2);robot.body.enableCcd(true);const cab=new THREE.Mesh(new THREE.BoxGeometry(1.5,.55,1.5),material(0xa7ebff));cab.position.y=.6;robot.mesh.add(cab);const bump=new THREE.Mesh(new THREE.BoxGeometry(2.7,.35,.35),material(0xff516f));bump.position.set(0,0,-1.85);robot.mesh.add(bump);for(let i=0;i<10;i++){const a=i/10*Math.PI*2,r=5+(i%3)*2;crates.push(box([1.4,1.4,1.4],[Math.cos(a)*r,1,Math.sin(a)*r-2],i%2?0xf49b43:0xb675df,'dynamic',3+i*.5))}
 function reset(){robot.body.setTranslation({x:0,y:1.3,z:10},true);robot.body.setRotation({x:0,y:0,z:0,w:1},true);robot.body.setLinvel({x:0,y:0,z:0},true);robot.body.setAngvel({x:0,y:0,z:0},true)}addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=1;if(e.key.toLowerCase()==='r')reset();if(e.key.toLowerCase()==='n')location.reload();if(e.key.toLowerCase()==='c'){fixedCamera=!fixedCamera;document.querySelector('#cameraMode').textContent=fixedCamera?'ISO':'SUIVI'}});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=0);document.querySelector('#cameraToggle').addEventListener('pointerdown',e=>{e.preventDefault();fixedCamera=!fixedCamera;document.querySelector('#cameraMode').textContent=fixedCamera?'ISO':'SUIVI'});document.querySelector('#resetRobot').addEventListener('pointerdown',e=>{e.preventDefault();reset()});document.querySelector('#newArena').addEventListener('pointerdown',e=>{e.preventDefault();location.reload()});let mobileForward=0,mobileTurn=0;
 const joystick=document.querySelector('#joystick'),stick=document.querySelector('#stick');
 function updateJoystick(e){const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.31,len=Math.hypot(dx,dy)||1,scale=Math.min(1,max/len),x=dx*scale,y=dy*scale;stick.style.transform=`translate(${x}px,${y}px)`;mobileTurn=x/max;mobileForward=-y/max}
@@ -48,8 +48,17 @@ function drive(){
  if(fw&&grounded&&upright>.55){const motorForce=aiMode?205:410;robot.body.addForce({x:f.x*motorForce*fw*upright,y:0,z:f.z*motorForce*fw*upright},true);}
  const av=robot.body.angvel();
  if(tr&&grounded&&upright>.5){const target=tr*(aiMode?2.1:3.1);robot.body.setAngvel({x:av.x*.84,y:av.y+(target-av.y)*.18,z:av.z*.84},true)}
- else robot.body.setAngvel({x:av.x*.92,y:av.y*.86,z:av.z*.92},true);
- const lv=robot.body.linvel(),horizontal=Math.hypot(lv.x,lv.z);
+ else robot.body.setAngvel({x:av.x*.72,y:Math.abs(av.y)<.08?0:av.y*.56,z:av.z*.72},true);
+ let lv=robot.body.linvel();
+ // Active ground brake: releasing movement stops translation quickly without cancelling gravity.
+ if(grounded&&Math.abs(fw)<.04){
+  const brake=.38;
+  const nx=Math.abs(lv.x)<.06?0:lv.x*brake,nz=Math.abs(lv.z)<.06?0:lv.z*brake;
+  robot.body.setLinvel({x:nx,y:lv.y,z:nz},true);lv=robot.body.linvel();
+ }
+ // Releasing steering hard-locks yaw once its residual speed is small.
+ if(grounded&&Math.abs(tr)<.04){const w=robot.body.angvel();robot.body.setAngvel({x:w.x*.65,y:Math.abs(w.y)<.12?0:w.y*.42,z:w.z*.65},true)}
+ const horizontal=Math.hypot(lv.x,lv.z);
  const maxSpeed=(grounded&&upright>.55)?(aiMode?9:21):6;
  if(horizontal>maxSpeed){const k=maxSpeed/horizontal;robot.body.setLinvel({x:lv.x*k,y:lv.y,z:lv.z*k},true)}
  // Airborne/tipped robot keeps normal gravity but loses artificial motor acceleration.

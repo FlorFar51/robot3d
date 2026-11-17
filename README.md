@@ -40,3 +40,10 @@ La rotation utilise maintenant une vitesse angulaire limitée et freinée afin d
 - Vitesse maximale de l'IA réduite à 9 m/s, contre 21 m/s pour le joueur.
 - Force moteur de l'IA divisée par deux.
 - L'IA change aléatoirement de direction toutes les 0,45 à 1,60 secondes afin de provoquer davantage de rotations, chocs et renversements observables.
+
+
+## V6
+- Frein actif au relâchement : la vitesse horizontale tombe rapidement à zéro quand le joueur lâche le joystick.
+- Frein de rotation renforcé : la rotation résiduelle est stoppée au relâchement.
+- La vitesse verticale reste libre pour conserver la gravité Rapier et les chutes naturelles.
+- Les freins ne s'appliquent fortement que lorsque le robot touche le sol.
