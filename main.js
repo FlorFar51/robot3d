@@ -105,7 +105,7 @@ function readPadInputs(){
  let f=rawF*padBindings.throttle.invert*(invertThrottle?-1:1);
  let t=rawT*padBindings.steering.invert*(invertSteering?-1:1);
  if(Math.abs(f)<.12)f=0;if(Math.abs(t)<.12)t=0;
- if(fm)fm.value=f;if(tm)tm.value=t;if(fv)fv.textContent=Math.round(f*100)+' %';if(tv)tv.textContent=Math.round(t*100)+' %';
+ if(fm)fm.value=f;if(tm)tm.value=t;if(fv)fv.textContent=(f>0?'+':'')+Math.round(f*100)+' %';if(tv)tv.textContent=Math.round(t*100)+' %';
  if(!captured){
   for(const name of ['reset','camera','diag']){
    const idx=padBindings[name],pressed=!!buttons[idx]?.pressed;
