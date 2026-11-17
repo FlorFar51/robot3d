@@ -4,3 +4,22 @@
 #diag{grid-column:1/3;width:136px!important;height:48px!important;border-radius:14px!important;background:#176b4a!important;border-color:#79ffc3!important}
 
 .card{width:min(760px,96vw)}.menuSection{display:inline-block;vertical-align:top;width:calc(50% - 8px);min-width:270px;padding:12px;margin:4px;border:1px solid #245775;border-radius:13px;background:#071522}.menuSection h3{margin:0 0 8px;color:#77d9ff}.hockeySection{border-color:#906ee8}.hockeySection h3{color:#c3a5ff}.hockeySection button{background:#6941a5!important;border-color:#c3a5ff!important}#hockeyOptions{position:fixed;inset:0;z-index:26;overflow:auto;padding:16px;background:#06101df2}#hockeyOptions.hidden,.hidden{display:none!important}#hockeyGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}@media(max-width:650px){.menuSection{width:100%;margin:4px 0}#hockeyGrid{grid-template-columns:1fr}}
+
+/* Interface des commandes */
+#commandsOpen{border-color:#61caff;color:#dff7ff}
+#commandsPanel{position:fixed;inset:0;z-index:40;overflow:auto;background:#06101df2;padding:18px;display:grid;place-items:center}
+#commandsPanel.hidden{display:none}
+.commandsCard{width:min(900px,100%);max-height:94vh;overflow:auto;padding:20px;background:#0b1b2a;border:1px solid #318bb8;border-radius:16px;color:#e8f5ff;box-shadow:0 18px 70px #000b}
+.commandsCard header{display:flex;justify-content:space-between;align-items:center;gap:14px}.commandsCard h2{margin:0;color:#70d6ff}.commandsCard header p{margin:5px 0 0;color:#a8c3d5;font-size:12px}
+.commandsCard button{cursor:pointer;background:#12334b;color:#effaff;border:1px solid #397da1;border-radius:7px;padding:8px 11px;font-weight:700}
+.commandsCard header button,#resetCommands{background:#17638a}
+.padStatus{display:flex;align-items:center;gap:12px;padding:12px;margin:14px 0;background:#071421;border:1px solid #29475d;border-radius:9px}.padStatus i{width:10px;height:10px;border-radius:50%;background:#777}.padStatus.connected i{background:#43e49a;box-shadow:0 0 10px #43e49a}.padStatus b,.padStatus small{display:block}.padStatus small{font-size:10px;color:#a8c3d5;margin-top:4px}
+.commandColumns{display:grid;grid-template-columns:1fr 1fr;gap:14px}.commandColumns section{padding:13px;background:#071421;border:1px solid #29475d;border-radius:10px}.commandColumns h3{margin:0 0 6px;color:#70d6ff;font-size:13px}.commandColumns p{font-size:10px;color:#a8c3d5;line-height:1.5}
+.commandRows>div{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid #203b50;font-size:10px}.commandRows button{min-width:90px}.commandRows button.waiting{background:#fff;color:#06101d;border-color:#fff}
+.invertOptions{display:grid;gap:9px;margin-top:14px;font-size:10px}.invertOptions input{accent-color:#54c9ff}
+.liveTest{margin-top:14px;padding:13px;background:#071421;border:1px solid #29475d;border-radius:10px}.liveTest>b{font-size:11px;color:#70d6ff}.liveTest>div{display:grid;grid-template-columns:80px 1fr 48px;align-items:center;gap:10px;margin:9px 0;font-size:10px}.liveTest meter{width:100%;height:12px}.liveTest output{text-align:right;font-variant-numeric:tabular-nums}.liveTest small{font-size:10px;color:#a8c3d5}
+#resetCommands{width:100%;margin-top:12px}
+#computer-help{position:fixed;left:12px;bottom:12px;z-index:8;padding:9px 12px;border:1px solid #397da1;border-radius:9px;background:#071421eF;color:#e8f5ff;font:11px/1.55 system-ui;pointer-events:none;display:none}
+#computer-help b{display:block;color:#70d6ff;margin-bottom:3px}
+body.started #computer-help{display:block}
+@media(max-width:650px){.commandColumns{grid-template-columns:1fr}.commandsCard{padding:12px;max-height:96vh}#computer-help{display:none!important}}
