@@ -7,7 +7,11 @@
 
 ## Sections séparées
 - Laboratoire et tests : test manuel, test IA, palets multiples, diagnostic et options physiques.
-- Mode Hockey : bouton et page de paramètres dédiés.
+- Mode Hockey : arène et paramètres dédiés dans la configuration unique.
+
+## Conduite robot réglable
+- Vitesse maximale (m/s), accélération maximale (m/s²) et décélération au freinage (m/s²).
+- Ces trois réglages sont communs au test manuel, au test IA et au hockey.
 
 ## Hockey paramétrable
 Terrain (largeur, longueur, murs), buts (largeur, profondeur, hauteur), match (durée, score gagnant, délai), palet (diamètre, hauteur, masse, rebond, glissement), robot (vitesse maximale, accélération, décélération, force moteur, rotation et freinage) et caméra (hauteur, décalage).
