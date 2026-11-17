@@ -1,10 +1,10 @@
-# Robot Push Lab V11
+# Robot Push Lab V12
 
-- Deux roues motrices arrière seulement.
-- Aucun contact avant sous forme de roue.
-- L'avant du châssis et une semelle centrale à faible friction servent d'appui au sol.
-- Robot en U : base rectangulaire arrière et deux crochets longitudinaux à l'avant, parallèles au sol.
-- Premier paramètre : hauteur des roues par rapport à la base.
-- Paramètres suivants : longueur et épaisseur des crochets.
+- Deux roues motrices placées à l'extérieur des côtés gauche et droit de la base.
+- La position latérale des roues suit automatiquement la largeur de la base.
+- La position arrière des roues suit automatiquement la longueur de la base.
+- Nouveaux paramètres : hauteur, longueur et largeur de la base bleue.
+- Le paramètre de hauteur des roues reste placé en premier.
+- Les crochets suivent automatiquement les dimensions de la base.
+- L'avant du châssis reste l'appui au sol, sans roues avant.
 - Force moteur par défaut : 100 N.
-- Caméra isométrique suiveuse et commandes ordinateur conservées.
