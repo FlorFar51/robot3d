@@ -68,7 +68,7 @@ const scene=new THREE.Scene();scene.background=new THREE.Color(0x07101d);scene.f
 const world=new RAPIER.World({x:0,y:settings.gravity,z:0});world.timestep=1/settings.timestep;const objects=[],crates=[],keys={};
 const DEFAULT_KEYS={forward:'z',back:'s',left:'q',right:'d',reset:'r',camera:'c',diag:'v'};let keyBindings={...DEFAULT_KEYS},waitingKey=null;
 const DEFAULT_PAD={throttle:{axis:2,invert:-1},steering:{axis:0,invert:1},reset:0,camera:1,diag:2};let padBindings=JSON.parse(JSON.stringify(DEFAULT_PAD)),waitingPad=null,activePad=null,lastPadButtons=[],padAxisBaseline=null;let invertThrottle=false,invertSteering=false;
-try{const saved=JSON.parse(localStorage.getItem('robotPushLabControls')||'null');if(saved){if(saved.keys)keyBindings={...keyBindings,...saved.keys};if(saved.pad)padBindings={...padBindings,...saved.pad};invertThrottle=!!saved.invertThrottle;invertSteering=!!saved.invertSteering}}catch{}let started=false,aiMode=false,fixedCam=true,hockeyMode=launchParams.get('mode')==='hockey',hockeyScores={blue:0,red:0},hockeyStart=0,hockeyEnded=false,mForward=0,mTurn=0,aiTurn=0,aiNext=0; const hockeyTeamSize=Math.max(1,Math.min(3,Number(launchParams.get('teams')||1))); let extraRobots=[];
+try{const saved=JSON.parse(localStorage.getItem('robotPushLabControls')||'null');if(saved){if(saved.keys)keyBindings={...keyBindings,...saved.keys};if(saved.pad)padBindings={...padBindings,...saved.pad};invertThrottle=!!saved.invertThrottle;invertSteering=!!saved.invertSteering}}catch{}let started=false,aiMode=false,fixedCam=true,hockeyMode=launchParams.get('mode')==='hockey',hockeyScores={blue:0,red:0},hockeyStart=0,hockeyEnded=false,mForward=0,mTurn=0,aiTurn=0,aiNext=0; const hockeyTeamSize=Math.max(0,Math.min(3,Number(launchParams.get('teams')??1))); let extraRobots=[];
 const material=c=>new THREE.MeshStandardMaterial({color:c,roughness:.72,metalness:.12});
 function staticBox(size,pos,color,rot={x:0,y:0,z:0,w:1}){const mesh=new THREE.Mesh(new THREE.BoxGeometry(...size),material(color));mesh.position.set(...pos);mesh.quaternion.set(rot.x,rot.y,rot.z,rot.w);mesh.castShadow=mesh.receiveShadow=true;scene.add(mesh);const body=world.createRigidBody(RAPIER.RigidBodyDesc.fixed().setTranslation(...pos).setRotation(rot));world.createCollider(RAPIER.ColliderDesc.cuboid(size[0]/2,size[1]/2,size[2]/2).setFriction(1.2),body);return {mesh,body}}
 function dynamicBox(size,pos,color,mass=4){const mesh=new THREE.Mesh(new THREE.BoxGeometry(...size),material(color));mesh.castShadow=mesh.receiveShadow=true;scene.add(mesh);const body=world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(...pos).setCcdEnabled(true).setLinearDamping(.12).setAngularDamping(.25));world.createCollider(RAPIER.ColliderDesc.cuboid(size[0]/2,size[1]/2,size[2]/2).setMass(mass).setFriction(.9).setRestitution(.03),body);const o={mesh,body};objects.push(o);return o}
@@ -87,12 +87,9 @@ const wheelMeshes=wheelPos.map(p=>{const m=new THREE.Mesh(new THREE.CylinderGeom
  world.createCollider(RAPIER.ColliderDesc.cuboid(settings.baseWidth*.4,.08,Math.min(.38,settings.baseLength*.12)).setTranslation(0,-settings.baseHeight/2-.02,settings.baseLength*.44).setMass(0).setFriction(Math.min(.45,settings.friction)),body);
  const inertia={x:Math.max(.01,settings.mass*(settings.baseHeight**2+settings.baseLength**2)/12),y:Math.max(.01,settings.mass*(settings.baseWidth**2+settings.baseLength**2)/12),z:Math.max(.01,settings.mass*(settings.baseWidth**2+settings.baseHeight**2)/12)};
  body.setAdditionalMassProperties(settings.mass,{x:settings.centerOfMassX,y:settings.centerOfMassY,z:settings.centerOfMassZ},inertia,{x:0,y:0,z:0,w:1},true);
- const controller=world.createVehicleController(body),positions=[{x:-settings.baseWidth/2,y:-settings.baseHeight/2+settings.wheelHeight,z:-settings.baseLength*.32},{x:settings.baseWidth/2,y:-settings.baseHeight/2+settings.wheelHeight,z:-settings.baseLength*.32}];
- for(const p of positions)controller.addWheel(p,{x:0,y:-1,z:0},{x:1,y:0,z:0},settings.suspensionRest,settings.wheelRadius);
- for(let i=0;i<controller.numWheels();i++){controller.setWheelSuspensionStiffness(i,settings.stiffness);controller.setWheelSuspensionCompression(i,settings.compression);controller.setWheelSuspensionRelaxation(i,settings.relaxation);controller.setWheelFrictionSlip(i,settings.grip);controller.setWheelMaxSuspensionForce(i,settings.maxSuspensionForce)}
- extraRobots.push({mesh,body,controller,positions,team,index});
+ extraRobots.push({mesh,body,team,index});
 }
-function createHockeyTeams(){if(!hockeyMode)return;extraRobots=[];for(let i=0;i<hockeyTeamSize-1;i++)createExtraRobot('blue',i);for(let i=0;i<hockeyTeamSize;i++)createExtraRobot('red',i)}
+function createHockeyTeams(){if(!hockeyMode)return;extraRobots=[];for(let i=0;i<Math.max(0,hockeyTeamSize-1);i++)createExtraRobot('blue',i);for(let i=0;i<hockeyTeamSize;i++)createExtraRobot('red',i)}
 function hockeyAICommand(unit){
  const p=unit.body.translation(), puck=hockeyPuck.body.translation(),goalZ=unit.team==='blue'?arenaL/2:-arenaL/2;
  const attackDir=unit.team==='blue'?1:-1;
@@ -106,13 +103,16 @@ function hockeyAICommand(unit){
  return {f:throttle,t:turn};
 }
 function driveExtraRobot(unit,command){
- const {f,t}=command,body=unit.body,controller=unit.controller,q=body.rotation(),forward=new THREE.Vector3(0,0,-1).applyQuaternion(new THREE.Quaternion(q.x,q.y,q.z,q.w)),v=body.linvel(),speed=v.x*forward.x+v.y*forward.y+v.z*forward.z;
- const target=f*settings.maxSpeed;let drive=0,brake=0;
- if(Math.abs(f)>.04){const accel=THREE.MathUtils.clamp((target-speed)*2,-settings.acceleration,settings.acceleration);drive=THREE.MathUtils.clamp(accel*settings.mass,-settings.aiForce,settings.aiForce)/2}else brake=Math.min(settings.brake,settings.brakePower,settings.mass*settings.brakeDeceleration)/2;
- const spin=-t*settings.aiSpin;
- for(let i=0;i<controller.numWheels();i++){const left=i===0;controller.setWheelEngineForce(i,drive+(left?-spin:spin));controller.setWheelBrake(i,brake);controller.setWheelSteering(i,0)}
- if(Math.abs(t)>.02)body.applyTorqueImpulse({x:0,y:spin*settings.baseWidth*world.timestep*.045,z:0},true);
- controller.updateVehicle(world.timestep,RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC);
+ const {f,t}=command,body=unit.body;
+ const q=body.rotation(),forward=new THREE.Vector3(0,0,-1).applyQuaternion(new THREE.Quaternion(q.x,q.y,q.z,q.w));
+ const velocity=body.linvel(),speed=velocity.x*forward.x+velocity.y*forward.y+velocity.z*forward.z;
+ const target=f*settings.maxSpeed;
+ const desiredAccel=THREE.MathUtils.clamp((target-speed)*2,-settings.acceleration,settings.acceleration);
+ const force=THREE.MathUtils.clamp(desiredAccel*settings.mass,-settings.aiForce,settings.aiForce);
+ // Apply forces directly to the rigid body. Extra robots deliberately do not
+ // use Rapier VehicleController, avoiding nested mutable borrows of the world.
+ body.applyImpulse({x:forward.x*force*world.timestep,y:0,z:forward.z*force*world.timestep},true);
+ if(Math.abs(t)>.02)body.applyTorqueImpulse({x:0,y:-t*settings.aiSpin*settings.baseWidth*world.timestep*.045,z:0},true);
 }
 createHockeyTeams();
 if(!hockeyMode)for(let i=0;i<10;i++){const a=i/10*Math.PI*2,r=5+(i%3)*2;crates.push(dynamicBox([1.35,1.35,1.35],[Math.cos(a)*r,1,Math.sin(a)*r-2],i%2?0xf49b43:0xb675df,3+i*.5))}
