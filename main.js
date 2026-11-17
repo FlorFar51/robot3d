@@ -99,9 +99,9 @@ function readPadInputs(){
    if(chosen>=0){padBindings[waitingPad.dataset.padbutton]=chosen;waitingPad.classList.remove('waiting');waitingPad=null;padAxisBaseline=null;renderControls();saveControls();document.querySelector('#assignHint').textContent='Bouton '+(chosen+1)+' affecté et sauvegardé.';captured=true}
   }
  }
- const throttleCenter=padBindings.throttle.center??0,steeringCenter=padBindings.steering.center??0;
- let rawF=(axes[padBindings.throttle.axis]||0)-throttleCenter,rawT=(axes[padBindings.steering.axis]||0)-steeringCenter;
- if(Math.abs(throttleCenter)>.7)rawF/=2;if(Math.abs(steeringCenter)>.7)rawT/=2;
+ // Les axes analogiques sont lus sur toute leur plage native : -1 = -100 %, 0 = neutre, +1 = +100 %.
+ // Ne pas soustraire le point de repos mémorisé lors de l'affectation : cela écrasait une moitié de la plage.
+ let rawF=axes[padBindings.throttle.axis]||0,rawT=axes[padBindings.steering.axis]||0;
  let f=rawF*padBindings.throttle.invert*(invertThrottle?-1:1);
  let t=rawT*padBindings.steering.invert*(invertSteering?-1:1);
  if(Math.abs(f)<.12)f=0;if(Math.abs(t)<.12)t=0;
