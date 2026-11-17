@@ -1,10 +1,10 @@
-# Robot Push Lab V12
+# Robot Push Lab V13
 
-- Deux roues motrices placées à l'extérieur des côtés gauche et droit de la base.
-- La position latérale des roues suit automatiquement la largeur de la base.
-- La position arrière des roues suit automatiquement la longueur de la base.
-- Nouveaux paramètres : hauteur, longueur et largeur de la base bleue.
-- Le paramètre de hauteur des roues reste placé en premier.
-- Les crochets suivent automatiquement les dimensions de la base.
-- L'avant du châssis reste l'appui au sol, sans roues avant.
-- Force moteur par défaut : 100 N.
+## Reconstruction fiable
+Les paramètres sont encodés dans l'URL au clic sur JOUER/IA, puis la page recharge et construit directement les vrais meshes, colliders, roues et crochets avec ces valeurs. Le visuel et la physique utilisent donc les mêmes dimensions.
+
+## Diagnostic
+Bouton DIAG : rayons des deux roues, contacts vert/rouge, centre de masse rouge, flèche de force moteur, compteur de contacts et état du robot.
+
+## Palets
+Paramètres : diamètre, hauteur, rebondissement, glissement/friction et nombre de palets. Les palets sont des cylindres dynamiques Rapier avec CCD.
