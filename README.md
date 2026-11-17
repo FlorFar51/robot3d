@@ -47,3 +47,14 @@ La rotation utilise maintenant une vitesse angulaire limitée et freinée afin d
 - Frein de rotation renforcé : la rotation résiduelle est stoppée au relâchement.
 - La vitesse verticale reste libre pour conserver la gravité Rapier et les chutes naturelles.
 - Les freins ne s'appliquent fortement que lorsque le robot touche le sol.
+
+
+## V7 — reconstruction physique
+- Contrôleur réécrit depuis zéro avec constantes centralisées.
+- Simulation à 120 Hz et solveur renforcé.
+- Rapier conserve la gravité, la vitesse verticale, les collisions, le tangage et le roulis.
+- Le contrôleur ne pilote que la vitesse au sol et le lacet.
+- Freinage par convergence vers zéro, indépendant du nombre d'images par seconde.
+- Contrôle aérien limité à 8 %, au lieu d'appliquer des corrections violentes.
+- IA limitée à 6 m/s avec changements aléatoires progressifs.
+- État SOL / AIR / RENVERSÉ visible dans le HUD.
