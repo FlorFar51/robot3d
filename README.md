@@ -25,3 +25,11 @@ La rotation utilise maintenant une vitesse angulaire limitée et freinée afin d
 - Bouton JOUER : contrôle manuel identique à la V2.
 - Bouton MODE IA : le robot sélectionne la caisse active la plus proche, pivote vers elle et avance pour la pousser.
 - Le mode IA démarre avec la caméra isométrique pour observer toute l'arène.
+
+
+## V4
+- Le robot reste entièrement soumis à la gravité Rapier (-9,81 m/s²).
+- Le moteur et la rotation sont coupés quand le robot est renversé ou ne touche plus le sol.
+- La vitesse horizontale est limitée pendant une chute ou un renversement pour éviter les départs incontrôlés.
+- Ajout du CCD Rapier pour limiter les traversées et impulsions extrêmes lors des chocs rapides.
+- Amortissement linéaire et angulaire renforcé.
