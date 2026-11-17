@@ -31,3 +31,7 @@ body.started #gameNav{display:flex}
 #gameNav #backToMenu{background:#174c6a;border-color:#75d7ff}
 #options,#hockeyOptions,#commandsPanel{z-index:45}
 @media(max-width:650px){#gameNav{top:8px;right:8px;gap:4px}#gameNav button{padding:8px 9px;font-size:9px}}
+
+.configExport{display:block;width:100%;min-height:145px;margin-top:10px;padding:10px;resize:vertical;box-sizing:border-box;background:#061421;color:#d7efff;border:1px solid #397da1;border-radius:8px;font:11px/1.4 monospace}
+.configExport.hidden{display:none}
+.optionButtons .exportConfig{background:#176b4a;border-color:#55d9a1;color:#effff8}
