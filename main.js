@@ -3,46 +3,46 @@ import RAPIER from "https://esm.sh/@dimforge/rapier3d-compat@0.19.3";
 await RAPIER.init();
 const phone=matchMedia('(pointer:coarse)').matches||/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);document.body.classList.toggle('phone',phone);
 const SETTINGS_DEF={
-wheelHeight:{label:'Hauteur des roues par rapport à la base',unit:'m',min:-.25,max:.35,step:.01,value:0.18},
-hookLength:{label:'Longueur des crochets avant',unit:'m',min:.3,max:3,step:.05,value:1.55},
-hookThickness:{label:'Épaisseur des crochets avant',unit:'m',min:.08,max:.6,step:.01,value:0.31},
-baseHeight:{label:'Hauteur de la base bleue',unit:'m',min:.2,max:1.5,step:.05,value:0.55},
-baseLength:{label:'Longueur de la base bleue',unit:'m',min:1.2,max:4.5,step:.05,value:1.9},
-baseWidth:{label:'Largeur de la base bleue',unit:'m',min:1.2,max:4,step:.05,value:2.3},
-puckDiameter:{label:'Diamètre des palets',unit:'m',min:.3,max:2.5,step:.05,value:0.9},
-puckHeight:{label:'Hauteur des palets',unit:'m',min:.08,max:.8,step:.02,value:0.22},
-puckRestitution:{label:'Rebondissement des palets',unit:'',min:0,max:1,step:.05,value:0.35},
-puckFriction:{label:'Glissement des palets (0 glisse, 1 accroche)',unit:'',min:0,max:1,step:.05,value:0.12},
-puckCount:{label:'Nombre de palets',unit:'',min:1,max:20,step:1,value:8},
-mass:{label:'Poids du châssis',unit:'kg',min:5,max:80,step:1,value:10},
-gravity:{label:'Gravité',unit:'m/s²',min:-20,max:-1,step:.1,value:-9.81},
-linearDamping:{label:'Amortissement linéaire',unit:'',min:0,max:3,step:.01,value:0.08},
-angularDamping:{label:'Amortissement rotation',unit:'',min:0,max:5,step:.01,value:0.22},
-friction:{label:'Friction du châssis',unit:'',min:0,max:2,step:.05,value:0.75},
-restitution:{label:'Rebond du châssis',unit:'',min:0,max:1,step:.01,value:0.02},
-wheelRadius:{label:'Rayon des roues',unit:'m',min:.15,max:.55,step:.01,value:0.29},
-suspensionRest:{label:'Course suspension',unit:'m',min:.05,max:.5,step:.01,value:0.16},
-stiffness:{label:'Raideur suspension',unit:'',min:10,max:250,step:5,value:70},
-compression:{label:'Compression suspension',unit:'',min:.5,max:20,step:.5,value:4.5},
-relaxation:{label:'Détente suspension',unit:'',min:.5,max:25,step:.5,value:6},
-grip:{label:'Adhérence des roues',unit:'',min:.2,max:12,step:.1,value:6.6},
-maxSuspensionForce:{label:'Force max suspension',unit:'N',min:500,max:15000,step:250,value:7000},
-maxSpeed:{label:'Vitesse maximale',unit:'m/s',min:1,max:40,step:.5,value:20},
-acceleration:{label:'Accélération maximale',unit:'m/s²',min:.5,max:40,step:.5,value:20},
-brakeDeceleration:{label:'Décélération au freinage',unit:'m/s²',min:.5,max:60,step:.5,value:30},
-playerForce:{label:'Force moteur joueur',unit:'N',min:20,max:2000,step:20,value:1000},
-playerSpin:{label:'Force rotation joueur',unit:'N',min:20,max:1400,step:20,value:700},
-aiForce:{label:'Force moteur IA',unit:'N',min:20,max:500,step:5,value:165},
-aiSpin:{label:'Force rotation IA',unit:'N',min:10,max:400,step:5,value:115},
-brake:{label:'Frein au relâchement',unit:'N',min:0,max:1000,step:10,value:150},
-brakePower:{label:'Puissance maximale des freins',unit:'N',min:100,max:5000,step:50,value:1500},
-timestep:{label:'Fréquence physique',unit:'Hz',min:30,max:240,step:30,value:120},
-centerOfMassX:{label:'Centre de gravité gauche / droite (− gauche, + droite)',unit:'m',min:-.8,max:.8,step:.02,value:0},
-centerOfMassY:{label:'Centre de gravité hauteur (− bas, + haut)',unit:'m',min:-.3,max:.3,step:.01,value:-0.22},
-centerOfMassZ:{label:'Centre de gravité avant / arrière ( + avant, − arrière)',unit:'m',min:-.9,max:.9,step:.02,value:0.9}
+wheelHeight:{label:'Hauteur des roues par rapport à la base',unit:'m',min:0.04,max:0.32,step:.01,value:0.18},
+hookLength:{label:'Longueur des crochets avant',unit:'m',min:0.35,max:2.75,step:.05,value:1.55},
+hookThickness:{label:'Épaisseur des crochets avant',unit:'m',min:0.07,max:0.55,step:.01,value:0.31},
+baseHeight:{label:'Hauteur de la base bleue',unit:'m',min:0.15,max:0.95,step:.05,value:0.55},
+baseLength:{label:'Longueur de la base bleue',unit:'m',min:0.4,max:3.4,step:.05,value:1.9},
+baseWidth:{label:'Largeur de la base bleue',unit:'m',min:0.9,max:3.7,step:.05,value:2.3},
+puckDiameter:{label:'Diamètre des palets',unit:'m',min:0.2,max:1.6,step:.05,value:0.9},
+puckHeight:{label:'Hauteur des palets',unit:'m',min:0.06,max:0.38,step:.02,value:0.22},
+puckRestitution:{label:'Rebondissement des palets',unit:'',min:0.1,max:0.6,step:.05,value:0.35},
+puckFriction:{label:'Glissement des palets (0 glisse, 1 accroche)',unit:'',min:0.07,max:0.17,step:.05,value:0.12},
+puckCount:{label:'Nombre de palets',unit:'',min:2,max:14,step:1,value:8},
+mass:{label:'Poids du châssis',unit:'kg',min:2,max:10,step:1,value:6},
+gravity:{label:'Gravité',unit:'m/s²',min:-17.61,max:-2.01,step:.1,value:-9.81},
+linearDamping:{label:'Amortissement linéaire',unit:'',min:0.02,max:0.14,step:.01,value:0.08},
+angularDamping:{label:'Amortissement rotation',unit:'',min:0.05,max:0.39,step:.01,value:0.22},
+friction:{label:'Friction du châssis',unit:'',min:0.15,max:1.35,step:.05,value:0.75},
+restitution:{label:'Rebond du châssis',unit:'',min:0.01,max:0.03,step:.01,value:0.02},
+wheelRadius:{label:'Rayon des roues',unit:'m',min:0.09,max:0.49,step:.01,value:0.29},
+suspensionRest:{label:'Course suspension',unit:'m',min:0.04,max:0.28,step:.01,value:0.16},
+stiffness:{label:'Raideur suspension',unit:'',min:15,max:125,step:5,value:70},
+compression:{label:'Compression suspension',unit:'',min:1,max:8,step:.5,value:4.5},
+relaxation:{label:'Détente suspension',unit:'',min:1.5,max:10.5,step:.5,value:6},
+grip:{label:'Adhérence des roues',unit:'',min:1.4,max:11.8,step:.1,value:6.6},
+maxSuspensionForce:{label:'Force max suspension',unit:'N',min:1500,max:12500,step:250,value:7000},
+maxSpeed:{label:'Vitesse maximale',unit:'m/s',min:20.5,max:59.5,step:.5,value:40},
+acceleration:{label:'Accélération maximale',unit:'m/s²',min:20.5,max:59.5,step:.5,value:40},
+brakeDeceleration:{label:'Décélération au freinage',unit:'m/s²',min:30.5,max:89.5,step:.5,value:60},
+playerForce:{label:'Force moteur joueur',unit:'N',min:1020,max:2980,step:20,value:2000},
+playerSpin:{label:'Force rotation joueur',unit:'N',min:140,max:1260,step:20,value:700},
+aiForce:{label:'Force moteur IA',unit:'N',min:35,max:295,step:5,value:165},
+aiSpin:{label:'Force rotation IA',unit:'N',min:25,max:205,step:5,value:115},
+brake:{label:'Frein au relâchement',unit:'N',min:30,max:270,step:10,value:150},
+brakePower:{label:'Puissance maximale des freins',unit:'N',min:300,max:2700,step:50,value:1500},
+timestep:{label:'Fréquence physique',unit:'Hz',min:30,max:210,step:30,value:120},
+centerOfMassX:{label:'Centre de gravité gauche / droite (− gauche, + droite)',unit:'m',min:-0.8,max:0.8,step:.02,value:0},
+centerOfMassY:{label:'Centre de gravité hauteur (− bas, + haut)',unit:'m',min:-0.52,max:0.08,step:.01,value:-0.22},
+centerOfMassZ:{label:'Centre de gravité avant / arrière ( + avant, − arrière)',unit:'m',min:0,max:1.8,step:.02,value:0.9}
 };
 const HOCKEY_DEF={
-fieldWidth:{label:'Largeur du terrain',unit:'m',min:12,max:34,step:1,value:30},fieldLength:{label:'Longueur du terrain',unit:'m',min:16,max:34,step:1,value:30},wallHeight:{label:'Hauteur des murs',unit:'m',min:.4,max:3,step:.1,value:3},wallThickness:{label:'Épaisseur des murs',unit:'m',min:.2,max:1,step:.05,value:0.45},goalWidth:{label:'Largeur des buts',unit:'m',min:2,max:10,step:.25,value:5},goalDepth:{label:'Profondeur des buts',unit:'m',min:.5,max:4,step:.1,value:2.8},goalHeight:{label:'Hauteur des buts',unit:'m',min:.4,max:3,step:.1,value:1.3},matchDuration:{label:'Durée du match',unit:'s',min:30,max:600,step:30,value:180},winningScore:{label:'Score pour gagner',unit:'',min:1,max:20,step:1,value:5},goalResetDelay:{label:'Délai remise en jeu',unit:'s',min:.2,max:5,step:.2,value:1.4},hockeyPuckDiameter:{label:'Diamètre du palet',unit:'m',min:.3,max:2.5,step:.05,value:0.9},hockeyPuckHeight:{label:'Hauteur du palet',unit:'m',min:.08,max:.8,step:.02,value:0.22},hockeyPuckMass:{label:'Masse du palet',unit:'kg',min:.2,max:30,step:.2,value:0.2},hockeyPuckBounce:{label:'Rebond du palet',unit:'',min:0,max:1,step:.05,value:0.25},hockeyPuckSlide:{label:'Friction/glissement du palet',unit:'',min:0,max:1,step:.05,value:0.1},cameraHeight:{label:'Hauteur caméra Hockey',unit:'m',min:8,max:35,step:1,value:20},cameraOffset:{label:'Décalage caméra Hockey',unit:'m',min:6,max:30,step:1,value:16}
+fieldWidth:{label:'Largeur du terrain',unit:'m',min:19,max:41,step:1,value:30},fieldLength:{label:'Longueur du terrain',unit:'m',min:21,max:39,step:1,value:30},wallHeight:{label:'Hauteur des murs',unit:'m',min:1.7,max:4.3,step:.1,value:3},wallThickness:{label:'Épaisseur des murs',unit:'m',min:0.1,max:0.8,step:.05,value:0.45},goalWidth:{label:'Largeur des buts',unit:'m',min:1,max:9,step:.25,value:5},goalDepth:{label:'Profondeur des buts',unit:'m',min:1.1,max:4.5,step:.1,value:2.8},goalHeight:{label:'Hauteur des buts',unit:'m',min:0.3,max:2.3,step:.1,value:1.3},matchDuration:{label:'Durée du match',unit:'s',min:60,max:300,step:30,value:180},winningScore:{label:'Score pour gagner',unit:'',min:1,max:9,step:1,value:5},goalResetDelay:{label:'Délai remise en jeu',unit:'s',min:0.4,max:2.4,step:.2,value:1.4},hockeyPuckDiameter:{label:'Diamètre du palet',unit:'m',min:0.2,max:1.6,step:.05,value:0.9},hockeyPuckHeight:{label:'Hauteur du palet',unit:'m',min:0.06,max:0.38,step:.02,value:0.22},hockeyPuckMass:{label:'Masse du palet',unit:'kg',min:0,max:0.4,step:.2,value:0.2},hockeyPuckBounce:{label:'Rebond du palet',unit:'',min:0.05,max:0.45,step:.05,value:0.25},hockeyPuckSlide:{label:'Friction/glissement du palet',unit:'',min:0.05,max:0.15,step:.05,value:0.1},cameraHeight:{label:'Hauteur caméra Hockey',unit:'m',min:7,max:33,step:1,value:20},cameraOffset:{label:'Décalage caméra Hockey',unit:'m',min:4,max:28,step:1,value:16}
 };
 Object.assign(SETTINGS_DEF,HOCKEY_DEF);
 let settings=Object.fromEntries(Object.entries(SETTINGS_DEF).map(([k,v])=>[k,v.value]));const launchParams=new URLSearchParams(location.search);for(const key of Object.keys(settings))if(launchParams.has(key))settings[key]=Number(launchParams.get(key));
@@ -50,7 +50,7 @@ let grid=document.querySelector('#optionGrid');if(!grid){grid=document.createEle
 for(const [key,def] of Object.entries(SETTINGS_DEF)){const row=document.createElement('div');row.className='option';row.innerHTML=`<label><span>${def.label}</span><output id="out-${key}">${settings[key]} ${def.unit}</output></label><input id="opt-${key}" type="range" min="${def.min}" max="${def.max}" step="${def.step}" value="${settings[key]}">`;grid.appendChild(row);const input=row.querySelector('input'),output=row.querySelector('output');input.addEventListener('input',()=>{settings[key]=Number(input.value);output.textContent=`${input.value} ${def.unit}`})}
 
 function exportCurrentConfig(button){
- const payload={format:'Robot Push Lab configuration',version:3,exportedAt:new Date().toISOString(),settings:{...settings}};
+ const payload={format:'Robot Push Lab configuration',version:4,exportedAt:new Date().toISOString(),settings:{...settings}};
  const json=JSON.stringify(payload,null,2);
  const panel=button.closest('.optionsCard');
  const area=panel.querySelector('.configExport');
@@ -135,6 +135,6 @@ function readPadInputs(){
  return {f,t}
 }
 function inputs(){if(aiMode){const now=performance.now();if(now>aiNext){aiNext=now+700+Math.random()*1400;aiTurn=Math.random()*2-1}return {f:.30,t:aiTurn}}const pad=readPadInputs();const kf=(keys[keyBindings.forward]?1:0)-(keys[keyBindings.back]?1:0),kt=(keys[keyBindings.left]?1:0)-(keys[keyBindings.right]?1:0);return {f:phone?mForward:(Math.abs(pad.f)>.04?pad.f:kf),t:phone?-mTurn:(Math.abs(pad.t)>.04?pad.t:kt)}}
-let lastDrive=0,lastTurn=0;function updateVehicle(){if(!started)return;const {f,t}=inputs();lastDrive=f;lastTurn=t;const q=robot.rotation(),forward=new THREE.Vector3(0,0,-1).applyQuaternion(new THREE.Quaternion(q.x,q.y,q.z,q.w)),velocity=robot.linvel(),forwardSpeed=velocity.x*forward.x+velocity.y*forward.y+velocity.z*forward.z,targetSpeed=f*settings.maxSpeed;let drive=0,brake=0;const hasThrottle=Math.abs(f)>.04,reversing=hasThrottle&&forwardSpeed*f<-.08;if(reversing){const brakeTotal=Math.min(settings.brakePower,settings.mass*settings.brakeDeceleration);brake=brakeTotal/2}else if(hasThrottle){const desiredAccel=THREE.MathUtils.clamp((targetSpeed-forwardSpeed)*2,-settings.acceleration,settings.acceleration),totalForce=THREE.MathUtils.clamp(desiredAccel*settings.mass,-(aiMode?settings.aiForce:settings.playerForce),aiMode?settings.aiForce:settings.playerForce);drive=totalForce/2}else{const brakeTotal=Math.min(settings.brake,settings.brakePower,settings.mass*settings.brakeDeceleration);brake=brakeTotal/2}const spin=-t*(aiMode?settings.aiSpin:settings.playerSpin);for(let i=0;i<vehicle.numWheels();i++){const left=i===0;vehicle.setWheelEngineForce(i,drive+(left?-spin:spin));vehicle.setWheelBrake(i,brake);vehicle.setWheelSteering(i,0)}vehicle.updateVehicle(world.timestep,RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC)}
+let lastDrive=0,lastTurn=0;function updateVehicle(){if(!started)return;const {f,t}=inputs();lastDrive=f;lastTurn=t;const q=robot.rotation(),forward=new THREE.Vector3(0,0,-1).applyQuaternion(new THREE.Quaternion(q.x,q.y,q.z,q.w)),velocity=robot.linvel(),forwardSpeed=velocity.x*forward.x+velocity.y*forward.y+velocity.z*forward.z,targetSpeed=f*settings.maxSpeed;let drive=0,brake=0;const hasThrottle=Math.abs(f)>.04,reversing=hasThrottle&&forwardSpeed*f<-.08;if(reversing){const brakeTotal=Math.min(settings.brakePower,settings.mass*settings.brakeDeceleration);brake=brakeTotal/2}else if(hasThrottle){const desiredAccel=THREE.MathUtils.clamp((targetSpeed-forwardSpeed)*2,-settings.acceleration,settings.acceleration),totalForce=THREE.MathUtils.clamp(desiredAccel*settings.mass,-(aiMode?settings.aiForce:settings.playerForce),aiMode?settings.aiForce:settings.playerForce);drive=totalForce/2}else{const brakeTotal=Math.min(settings.brake,settings.brakePower,settings.mass*settings.brakeDeceleration);brake=brakeTotal/2}const spin=-t*(aiMode?settings.aiSpin:settings.playerSpin);for(let i=0;i<vehicle.numWheels();i++){const left=i===0;vehicle.setWheelEngineForce(i,drive+(left?-spin:spin));vehicle.setWheelBrake(i,brake);vehicle.setWheelSteering(i,0)}if(Math.abs(t)>.02){const yawAssist=spin*settings.baseWidth*world.timestep*(hockeyMode?.045:.035);robot.applyTorqueImpulse({x:0,y:yawAssist,z:0},true)}vehicle.updateVehicle(world.timestep,RAPIER.QueryFilterFlags.EXCLUDE_DYNAMIC)}
 let controlPreviewFrame=0;function previewControls(){readPadInputs();if(document.querySelector('#commandsPanel')&&!document.querySelector('#commandsPanel').classList.contains('hidden'))scanPad();controlPreviewFrame=requestAnimationFrame(previewControls)}requestAnimationFrame(previewControls);
 const clock=new THREE.Clock();let acc=0;function sync(){const p=robot.translation(),q=robot.rotation();robotMesh.position.set(p.x,p.y,p.z);robotMesh.quaternion.set(q.x,q.y,q.z,q.w);for(const o of objects){const p=o.body.translation(),q=o.body.rotation();o.mesh.position.set(p.x,p.y,p.z);o.mesh.quaternion.set(q.x,q.y,q.z,q.w)}}function loop(){requestAnimationFrame(loop);acc+=Math.min(clock.getDelta(),.05);while(acc>=world.timestep){updateVehicle();world.step();acc-=world.timestep}sync();const p=robotMesh.position,q=robotMesh.quaternion;if(fixedCam){const isoTarget=new THREE.Vector3(p.x+(hockeyMode?settings.cameraOffset:16),hockeyMode?settings.cameraHeight:20,p.z+(hockeyMode?settings.cameraOffset:16));camera.position.lerp(isoTarget,.055);camera.lookAt(p.x,p.y+.6,p.z)}else{const target=new THREE.Vector3(0,7.5,12).applyQuaternion(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),new THREE.Euler().setFromQuaternion(q).y)).add(p);camera.position.lerp(target,.07);camera.lookAt(p.x,p.y+1,p.z)}let contacts=0;for(let i=0;i<vehicle.numWheels();i++)if(vehicle.wheelIsInContact(i))contacts++;const up=new THREE.Vector3(0,1,0).applyQuaternion(q).y;document.querySelector('#contacts').textContent=contacts+'/2';document.querySelector('#state').textContent=contacts===0?'AIR':up<.35?'RENVERSÉ':'SOL';document.querySelector('#speed').textContent=Math.abs(vehicle.currentVehicleSpeed()).toFixed(1);if(hockeyMode&&!hockeyEnded&&hockeyPuck){const elapsed=(performance.now()-hockeyStart)/1000,left=Math.max(0,settings.matchDuration-elapsed);document.querySelector('#hockeyTime').textContent=Math.floor(left/60)+':'+String(Math.floor(left%60)).padStart(2,'0');const hp=hockeyPuck.body.translation();if(Math.abs(hp.x)<settings.goalWidth/2&&Math.abs(hp.z)>arenaL/2){hockeyScore++;document.querySelector('#hockeyScore').textContent=hockeyScore;hockeyPuck.body.setTranslation({x:0,y:settings.hockeyPuckHeight/2+.04,z:0},true);hockeyPuck.body.setLinvel({x:0,y:0,z:0},true);hockeyPuck.body.setAngvel({x:0,y:0,z:0},true)}if(left<=0||hockeyScore>=settings.winningScore){hockeyEnded=true;document.querySelector('#state').textContent='MATCH FINI'}}if(diagnostics){comMarker.position.copy(robotMesh.position).add(new THREE.Vector3(settings.centerOfMassX,settings.centerOfMassY,settings.centerOfMassZ).applyQuaternion(robotMesh.quaternion));const quat=robotMesh.quaternion;for(let i=0;i<2;i++){const wp=new THREE.Vector3(wheelPos[i].x,wheelPos[i].y,wheelPos[i].z).applyQuaternion(quat).add(robotMesh.position),end=wp.clone().add(new THREE.Vector3(0,-(settings.suspensionRest+settings.wheelRadius+.35),0));rayLines[i].geometry.setFromPoints([wp,end]);const contact=vehicle.wheelIsInContact(i);rayLines[i].material.color.setHex(contact?0x44ff77:0xff3344);contactMarkers[i].visible=contact;contactMarkers[i].position.copy(end)}const dir=new THREE.Vector3(0,0,-1).applyQuaternion(quat).setY(0).normalize();forceArrow.position.copy(robotMesh.position);forceArrow.setDirection(dir);forceArrow.setLength(.4+Math.abs(lastDrive)*2.5,.28,.14);forceArrow.setColor(new THREE.Color(lastDrive>=0?0x44aaff:0xffaa44))}if(p.y<-5)reset();renderer.render(scene,camera)}addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});document.querySelector('#loading').remove();loop();
