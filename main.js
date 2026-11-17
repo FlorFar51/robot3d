@@ -14,7 +14,7 @@ puckHeight:{label:'Hauteur des palets',unit:'m',min:0.06,max:0.38,step:.02,value
 puckRestitution:{label:'Rebondissement des palets',unit:'',min:0.1,max:0.6,step:.05,value:0.35},
 puckFriction:{label:'Glissement des palets (0 glisse, 1 accroche)',unit:'',min:0.07,max:0.17,step:.05,value:0.12},
 puckCount:{label:'Nombre de palets',unit:'',min:2,max:14,step:1,value:8},
-mass:{label:'Poids du châssis',unit:'kg',min:2,max:10,step:1,value:6},
+mass:{label:'Poids du châssis',unit:'kg',min:2,max:10,step:1,value:4},
 gravity:{label:'Gravité',unit:'m/s²',min:-17.61,max:-2.01,step:.1,value:-9.81},
 linearDamping:{label:'Amortissement linéaire',unit:'',min:0.02,max:0.14,step:.01,value:0.08},
 angularDamping:{label:'Amortissement rotation',unit:'',min:0.05,max:0.39,step:.01,value:0.22},
@@ -28,10 +28,10 @@ relaxation:{label:'Détente suspension',unit:'',min:1.5,max:10.5,step:.5,value:6
 grip:{label:'Adhérence des roues',unit:'',min:1.4,max:11.8,step:.1,value:6.6},
 maxSuspensionForce:{label:'Force max suspension',unit:'N',min:1500,max:12500,step:250,value:7000},
 maxSpeed:{label:'Vitesse maximale',unit:'m/s',min:20.5,max:59.5,step:.5,value:40},
-acceleration:{label:'Accélération maximale',unit:'m/s²',min:20.5,max:59.5,step:.5,value:40},
+acceleration:{label:'Accélération maximale',unit:'m/s²',min:20.5,max:59.5,step:.5,value:55},
 brakeDeceleration:{label:'Décélération au freinage',unit:'m/s²',min:30.5,max:89.5,step:.5,value:60},
 playerForce:{label:'Force moteur joueur',unit:'N',min:1020,max:2980,step:20,value:2000},
-playerSpin:{label:'Force rotation joueur',unit:'N',min:140,max:1260,step:20,value:700},
+playerSpin:{label:'Force rotation joueur',unit:'N',min:140,max:1260,step:20,value:780},
 aiForce:{label:'Force moteur IA',unit:'N',min:35,max:295,step:5,value:165},
 aiSpin:{label:'Force rotation IA',unit:'N',min:25,max:205,step:5,value:115},
 brake:{label:'Frein au relâchement',unit:'N',min:30,max:270,step:10,value:150},
@@ -42,15 +42,15 @@ centerOfMassY:{label:'Centre de gravité hauteur (− bas, + haut)',unit:'m',min
 centerOfMassZ:{label:'Centre de gravité avant / arrière ( + avant, − arrière)',unit:'m',min:0,max:1.8,step:.02,value:0.9}
 };
 const HOCKEY_DEF={
-fieldWidth:{label:'Largeur du terrain',unit:'m',min:19,max:41,step:1,value:30},fieldLength:{label:'Longueur du terrain',unit:'m',min:21,max:39,step:1,value:30},wallHeight:{label:'Hauteur des murs',unit:'m',min:1.7,max:4.3,step:.1,value:3},wallThickness:{label:'Épaisseur des murs',unit:'m',min:0.1,max:0.8,step:.05,value:0.45},goalWidth:{label:'Largeur des buts',unit:'m',min:1,max:9,step:.25,value:5},goalDepth:{label:'Profondeur des buts',unit:'m',min:1.1,max:4.5,step:.1,value:2.8},goalHeight:{label:'Hauteur des buts',unit:'m',min:0.3,max:2.3,step:.1,value:1.3},matchDuration:{label:'Durée du match',unit:'s',min:60,max:300,step:30,value:180},winningScore:{label:'Score pour gagner',unit:'',min:1,max:9,step:1,value:5},goalResetDelay:{label:'Délai remise en jeu',unit:'s',min:0.4,max:2.4,step:.2,value:1.4},hockeyPuckDiameter:{label:'Diamètre du palet',unit:'m',min:0.2,max:1.6,step:.05,value:0.9},hockeyPuckHeight:{label:'Hauteur du palet',unit:'m',min:0.06,max:0.38,step:.02,value:0.22},hockeyPuckMass:{label:'Masse du palet',unit:'kg',min:0.01,max:5,step:0.01,value:0.2},hockeyPuckBounce:{label:'Rebond du palet',unit:'',min:0.05,max:0.45,step:.05,value:0.25},hockeyPuckSlide:{label:'Friction/glissement du palet',unit:'',min:0.05,max:0.15,step:.05,value:0.1},cameraHeight:{label:'Hauteur caméra Hockey',unit:'m',min:7,max:33,step:1,value:20},cameraOffset:{label:'Décalage caméra Hockey',unit:'m',min:4,max:28,step:1,value:16}
+fieldWidth:{label:'Largeur du terrain',unit:'m',min:19,max:41,step:1,value:30},fieldLength:{label:'Longueur du terrain',unit:'m',min:21,max:39,step:1,value:30},wallHeight:{label:'Hauteur des murs',unit:'m',min:1.7,max:4.3,step:.1,value:3},wallThickness:{label:'Épaisseur des murs',unit:'m',min:0.1,max:0.8,step:.05,value:0.45},goalWidth:{label:'Largeur des buts',unit:'m',min:1,max:9,step:.25,value:5},goalDepth:{label:'Profondeur des buts',unit:'m',min:1.1,max:4.5,step:.1,value:2.8},goalHeight:{label:'Hauteur des buts',unit:'m',min:0.3,max:2.3,step:.1,value:1.3},matchDuration:{label:'Durée du match',unit:'s',min:60,max:300,step:30,value:180},winningScore:{label:'Score pour gagner',unit:'',min:1,max:9,step:1,value:5},goalResetDelay:{label:'Délai remise en jeu',unit:'s',min:0.4,max:2.4,step:.2,value:1.4},hockeyPuckDiameter:{label:'Diamètre du palet',unit:'m',min:0.2,max:1.6,step:.05,value:0.9},hockeyPuckHeight:{label:'Hauteur du palet',unit:'m',min:0.06,max:0.38,step:.02,value:0.22},hockeyPuckMass:{label:'Masse du palet',unit:'kg',min:0,max:5,step:0.001,value:0.2},hockeyPuckBounce:{label:'Rebond du palet',unit:'',min:0.05,max:0.45,step:.05,value:0.25},hockeyPuckSlide:{label:'Friction/glissement du palet',unit:'',min:0.05,max:0.15,step:.05,value:0.1},cameraHeight:{label:'Hauteur caméra Hockey',unit:'m',min:7,max:33,step:1,value:20},cameraOffset:{label:'Décalage caméra Hockey',unit:'m',min:4,max:28,step:1,value:16}
 };
 Object.assign(SETTINGS_DEF,HOCKEY_DEF);
 let settings=Object.fromEntries(Object.entries(SETTINGS_DEF).map(([k,v])=>[k,v.value]));const launchParams=new URLSearchParams(location.search);for(const key of Object.keys(settings))if(launchParams.has(key))settings[key]=Number(launchParams.get(key));
 let grid=document.querySelector('#optionGrid');if(!grid){grid=document.createElement('div');grid.id='optionGrid';const card=document.querySelector('#options .optionsCard');if(card)card.prepend(grid);else{const options=document.querySelector('#options');if(options)options.appendChild(grid)}}
-for(const [key,def] of Object.entries(SETTINGS_DEF)){const row=document.createElement('div');row.className='option';row.innerHTML=`<label><span>${def.label}</span><output id="out-${key}">${settings[key]} ${def.unit}</output></label><input id="opt-${key}" type="range" min="${def.min}" max="${def.max}" step="${def.step}" value="${settings[key]}">`;grid.appendChild(row);const input=row.querySelector('input'),output=row.querySelector('output');input.addEventListener('input',()=>{settings[key]=Number(input.value);output.textContent=`${input.value} ${def.unit}`})}
+for(const [key,def] of Object.entries(SETTINGS_DEF)){const row=document.createElement('div');row.className='option';row.innerHTML=`<label><span>${def.label}</span><output id="out-${key}">${settings[key]} ${def.unit}</output></label><input id="opt-${key}" type="range" min="${def.min}" max="${def.max}" step="${def.step}" value="${settings[key]}">`;grid.appendChild(row);const input=row.querySelector('input'),output=row.querySelector('output');input.addEventListener('input',()=>{settings[key]=Number(input.value);output.textContent=`${key==='hockeyPuckMass'?Number(input.value).toFixed(3):input.value} ${def.unit}`})}
 
 function exportCurrentConfig(button){
- const payload={format:'Robot Push Lab configuration',version:5,exportedAt:new Date().toISOString(),settings:{...settings}};
+ const payload={format:'Robot Push Lab configuration',version:6,exportedAt:new Date().toISOString(),settings:{...settings}};
  const json=JSON.stringify(payload,null,2);
  const panel=button.closest('.optionsCard');
  const area=panel.querySelector('.configExport');
