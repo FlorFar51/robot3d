@@ -7,7 +7,7 @@ const BASE = { fieldWidth: 20, fieldLength: 33 };       // terrain 1v1 d'origine
 const ROBOT = { w: 2.3, l: 1.9 + 1.55 };                // largeur du châssis ; longueur châssis + crochets
 const cfg = (o = {}) => ({
   periodDuration: 10, overtimeDuration: 6, winningScore: 5, goalDelay: 1.4,
-  arenaW: 20, arenaL: 33, goalWidth: 6.5, goalDepth: 3.5, wallH: 2, puckRadius: 0.45, ...o,
+  arenaW: 20, arenaL: 33, goalWidth: 6.5, goalDepth: 3.5, wallH: 2, puckRadius: 0.45, resetPuck: true, ...o,
 });
 const play = (m) => { m.phase = 'play'; return m; };
 const still = { x: 0, y: 0.15, z: 0, speed: 5 };
@@ -92,15 +92,6 @@ test('match : compte à rebours 3 s puis jeu ; le chrono ne tourne qu’en temps
   tick(m, 2); assert.ok(Math.abs(m.clock - 8) < 0.05);
 });
 
-test('match : but -> pause, repositionnement, compte à rebours, reprise ; le chrono est arrêté', () => {
-  const m = play(H.createMatch(cfg())), goal = { x: 0, y: 0.15, z: 17.5, speed: 8 };
-  const ev = H.stepMatch(m, 0.01, goal);
-  assert.deepEqual(ev[0], { type: 'goal', team: 1 }); assert.deepEqual(m.score, [0, 1]); assert.equal(m.phase, 'goal');
-  const clock = m.clock; const ev2 = tick(m, 1.5);
-  assert.ok(ev2.some((e) => e.type === 'faceoff')); assert.equal(m.phase, 'countdown'); assert.equal(m.clock, clock, 'chrono figé');
-  assert.ok(tick(m, 3.1).some((e) => e.type === 'release')); assert.equal(m.phase, 'play');
-});
-
 test('match : le score cible met fin au match immédiatement', () => {
   const m = play(H.createMatch(cfg({ winningScore: 2 }))); m.score = [0, 1];
   const ev = H.stepMatch(m, 0.01, { x: 0, y: 0, z: 17.5, speed: 5 });
@@ -131,15 +122,6 @@ test('match : égalité -> prolongation en but en or, puis nul si personne ne ma
   assert.equal(m2.phase, 'ended'); assert.equal(m2.winner, 0, 'but en or');
 });
 
-test('match : palet immobile 6 s ou sorti du jeu -> remise en jeu sans point', () => {
-  const m = play(H.createMatch(cfg())); const slow = { x: 3, y: 0.15, z: 3, speed: 0.1 };
-  const ev = tick(m, 6.1, slow);
-  assert.ok(ev.some((e) => e.type === 'stall')); assert.equal(m.phase, 'countdown'); assert.deepEqual(m.score, [0, 0]);
-  const m2 = play(H.createMatch(cfg()));
-  const ev2 = H.stepMatch(m2, 0.01, { x: 30, y: 0.2, z: 0, speed: 5 });
-  assert.ok(ev2.some((e) => e.type === 'out')); assert.equal(m2.phase, 'countdown');
-});
-
 test('IA : sens de rotation et de marche cohérents avec la conduite du jeu', () => {
   const arena = H.arenaFor(1, BASE);
   // robot en (0,0), crochets vers +z ; palet à +x : il faut un yaw positif (+z vers +x) -> t < 0
@@ -153,4 +135,76 @@ test('IA : sens de rotation et de marche cohérents avec la conduite du jeu', ()
   assert.ok(behind.f === 0 && Math.abs(behind.t) > 0.5, 'palet derrière : pivote d’abord');
   const guard = H.aiCommand({ self: { x: 0, z: -arena.length * 0.32, fx: 0, fz: 1 }, team: 1, slot: 0, n: 1, role: 'guard', puck: { x: 0, z: 5 }, arena });
   assert.deepEqual(guard, { f: 0, t: 0 }, 'défenseur déjà en place : immobile');
+});
+
+const inGoal = { x: 0, y: 0.15, z: 17.5, speed: 0 };    // palet au fond du but défendu par l'équipe 0
+const onIce = { x: 0, y: 0.15, z: 10, speed: 5 };
+
+test('phases : seuls le départ, les pauses et la fin verrouillent les commandes', () => {
+  for (const [phase, locked] of [['countdown', true], ['intermission', true], ['ended', true], ['play', false], ['goal', false], ['reset', false]])
+    assert.equal(H.isLocked({ phase }), locked, phase);
+});
+
+test('but, palet remis au centre : les robots restent libres, aucun repositionnement, chrono arrêté, puis lâcher', () => {
+  const m = play(H.createMatch(cfg({ resetPuck: true })));
+  let ev = H.stepMatch(m, 0.01, inGoal);
+  assert.deepEqual(ev[0], { type: 'goal', team: 1 }); assert.ok(ev.some((e) => e.type === 'puckReturn'));
+  assert.deepEqual(m.score, [0, 1]); assert.equal(m.phase, 'goal'); assert.equal(H.isLocked(m), false);
+  const clock = m.clock, during = tick(m, 1.3, inGoal);        // pendant le retour, le palet est encore au fond du but
+  assert.deepEqual(m.score, [0, 1], 'pas de second but pendant le retour'); assert.equal(m.phase, 'goal');
+  assert.equal(m.clock, clock, 'chrono figé pendant le retour du palet');
+  const all = [...during, ...tick(m, 0.2, onIce)];            // puis il est au centre et lâché
+  assert.ok(all.some((e) => e.type === 'release')); assert.ok(!all.some((e) => e.type === 'faceoff'), 'jamais de repositionnement des robots après un but');
+  assert.equal(m.phase, 'play'); assert.deepEqual(m.score, [0, 1]);
+});
+
+test('but, palet laissé en place : le jeu continue sans interruption, chrono en marche, pas de double but', () => {
+  const m = play(H.createMatch(cfg({ resetPuck: false })));
+  const ev = H.stepMatch(m, 0.01, inGoal);
+  assert.deepEqual(ev[0], { type: 'goal', team: 1 }); assert.ok(!ev.some((e) => e.type === 'puckReturn'));
+  assert.equal(m.phase, 'play'); assert.equal(H.isLocked(m), false);
+  const clock = m.clock, more = tick(m, 8, inGoal);          // le palet reste au fond du but
+  assert.deepEqual(m.score, [0, 1], 'un palet qui reste dans le but ne marque qu’une fois');
+  assert.ok(!more.some((e) => ['stall', 'out', 'puckReturn', 'faceoff'].includes(e.type)), 'palet immobile dans le but : pas de remise en jeu');
+  assert.ok(Math.abs(m.clock - (clock - 8)) < 0.05, 'chrono en marche');
+  tick(m, 0.1, onIce);                                        // le palet ressort : le but est de nouveau actif
+  H.stepMatch(m, 0.01, inGoal); assert.deepEqual(m.score, [0, 2]);
+});
+
+test('but et score cible / prolongation : même résultat avec ou sans remise du palet', () => {
+  for (const resetPuck of [true, false]) {
+    const m = play(H.createMatch(cfg({ resetPuck, winningScore: 2 }))); m.score = [0, 1];
+    H.stepMatch(m, 0.01, inGoal); assert.equal(m.phase, 'ended'); assert.equal(m.winner, 1);
+    const o = play(H.createMatch(cfg({ resetPuck }))); o.overtime = true; o.period = 4; o.clock = 3;
+    H.stepMatch(o, 0.01, { x: 0, y: 0, z: -17.5, speed: 5 }); assert.equal(o.phase, 'ended'); assert.equal(o.winner, 0);
+  }
+});
+
+test('palet immobile 6 s ou sorti du jeu : le palet revient au centre, les robots restent libres et en place', () => {
+  const m = play(H.createMatch(cfg())), slow = { x: 3, y: 0.15, z: 3, speed: 0.1 };
+  const ev = tick(m, 6.1, slow);
+  assert.ok(ev.some((e) => e.type === 'stall') && ev.some((e) => e.type === 'puckReturn'));
+  assert.ok(!ev.some((e) => e.type === 'faceoff')); assert.equal(m.phase, 'reset'); assert.equal(H.isLocked(m), false);
+  assert.deepEqual(m.score, [0, 0]);
+  assert.ok(tick(m, 1.5, slow).some((e) => e.type === 'release')); assert.equal(m.phase, 'play');
+  const m2 = play(H.createMatch(cfg()));
+  const ev2 = H.stepMatch(m2, 0.01, { x: 30, y: 0.2, z: 0, speed: 5 });
+  assert.ok(ev2.some((e) => e.type === 'out') && ev2.some((e) => e.type === 'puckReturn')); assert.equal(m2.phase, 'reset');
+});
+
+test('départ de match et de période : commandes verrouillées et robots replacés (faceoff)', () => {
+  const m = H.createMatch(cfg({ periodDuration: 5 })); assert.equal(H.isLocked(m), true);
+  const m2 = play(H.createMatch(cfg({ periodDuration: 5 }))); m2.score = [1, 0];
+  const ev = tick(m2, 5.1, onIce);
+  assert.ok(ev.some((e) => e.type === 'periodEnd')); assert.equal(m2.phase, 'intermission'); assert.equal(H.isLocked(m2), true);
+  const ev2 = tick(m2, 4.1, onIce);
+  assert.ok(ev2.some((e) => e.type === 'faceoff')); assert.equal(m2.phase, 'countdown'); assert.equal(H.isLocked(m2), true);
+});
+
+test('bandeau BUT : visible un court instant, avec ou sans remise du palet', () => {
+  for (const resetPuck of [true, false]) {
+    const m = play(H.createMatch(cfg({ resetPuck })));
+    H.stepMatch(m, 0.01, inGoal); assert.ok(m.flash > 1); assert.equal(m.lastScorer, 1);
+    tick(m, 2.5, onIce); assert.equal(m.flash, 0);
+  }
 });

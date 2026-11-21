@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT — Robot Push Lab
 
-Dernière mise à jour : 21/11/2026 (première version du Hockey 1v1 / 2v2 / 3v3).
+Dernière mise à jour : 21/11/2026 (Hockey 1v1 / 2v2 / 3v3 ; option de réinitialisation du palet ; reprise sans blocage après un but ; prototype du HUD).
 
 ## 1. Architecture
 
@@ -27,8 +27,9 @@ Sources : IIHF Official Rule Book 2026/27 v1.0 (juin 2026). Lu : règle 1 (patin
 | 3 × 20 min de temps effectif, chrono arrêté au but | 3 périodes de `periodDuration` s (défaut 120, réglable 30-300), temps effectif, pause de 4 s | Fait |
 | But : palet entièrement franchi, entre les poteaux | Centre du palet au-delà de la ligne + rayon, palet entièrement dans l'ouverture. Testé à chaque pas physique (1/120 s) | Fait |
 | But contre son camp compte pour l'adversaire | Équipe 0 défend z = +L/2, équipe 1 défend z = −L/2 | Fait |
-| Remise en jeu au centre après un but | Robots replacés, palet suspendu 4,5 m, compte à rebours 3-2-1, robots verrouillés, lâcher | Fait |
-| Palet sorti / coincé (3 s) | Bandes pleines : le palet ne sort pas. Palet immobile (< 0,4 m/s) 6 s ou hors du terrain → remise en jeu au centre, sans point | Fait |
+| Remise en jeu après un but | Réglage `puckReset` (Configuration › Match – Hockey). **1** : le palet remonte à 4,5 m au centre pendant `goalResetDelay` (1,4 s) puis est lâché. **0** : le palet reste où il est et le jeu continue ; un palet resté dans le but ne marque qu'une fois, il doit ressortir. Dans les deux cas les robots **ne sont ni bloqués, ni repositionnés, ni ralentis** et le chrono s'arrête seulement pendant le retour du palet | Fait |
+| Palet sorti / coincé (3 s) | Bandes pleines : le palet ne sort pas. Palet immobile (< 0,4 m/s) 6 s sur le terrain (pas au fond d'un but) ou hors du terrain → le palet revient au centre comme après un but, sans point et sans toucher aux robots | Fait |
+| Départ de match et de période | Seul moment où les commandes sont verrouillées : robots replacés, décompte 3-2-1, puis lâcher | Fait |
 | Prolongation | But en or, `overtimeDuration` s (défaut 120), puis match nul | Fait (règle 84 non lue : choix personnel) |
 | Gardien, hors-jeu, icing, pénalités, changements | Pas en V1 | Reporté |
 | Contacts autorisés, interférence | Contacts libres. Un robot renversé plus de 3 s est replacé à son départ | Fait (non issu des règles IIHF) |
@@ -76,7 +77,8 @@ Seule correction de comportement : `driveRobot` réveille le robot (`wakeUp`) d�
 
 ## 6. Tests réalisés (banc d'essai Node : vrai `main.js`, vrai Rapier et Three, DOM simulé)
 
-- 14 tests unitaires de `hockey.js` : 14/14 réussis.
+- 19 tests unitaires de `hockey.js` : 19/19 réussis (dont les deux options de réinitialisation, la continuité après un but, le départ de match/période).
+- Continuité après un but, vrai moteur, 1v1/2v2/3v3 × `puckReset` 1 et 0 : aucun robot téléporté, vitesse non remise à zéro, commandes actives pendant tout le but, palet au centre au lâcher (option 1) ou resté dans le but sans double but (option 0), chrono cohérent.
 - Laboratoire (modes manuel et IA) : trajectoires ancien/nouveau code identiques sur 8 s simulées (57 lignes, 18 objets physiques inclus).
 - Matchs IA contre IA (périodes de 60 s, score cible 9, une partie déterministe par ligne, donc indicatif et non statistique) :
 
@@ -98,4 +100,12 @@ Seule correction de comportement : `driveRobot` réveille le robot (`wakeUp`) d�
 - `goalResetDelay` n'était lu par aucun code. Il règle maintenant la durée du retour du palet après un but (défaut 1,4 s ; l'ancien code figeait 0,85 s).
 - README « V15 » et `index.html` « V20 » : numéros de version incohérents.
 - L'IA (`aiThrottle = 1` dans `RULES`) charge à pleine vitesse ; les collisions frontales à ≈ 23 m/s peuvent projeter un robot.
+- Avec `puckReset = 0`, l'IA récupère mal un palet resté dans le but : 3 buts en 3 minutes de jeu observés en IA contre IA, contre 2 à 7 buts/min avec `puckReset = 1`. Un joueur humain peut le sortir.
 - Les robots non principaux n'ont pas de diagnostic visuel (raycasts) : réservé à `robots[0]`.
+
+## 8. Interface (état et prochaines étapes)
+
+L'interface n'a **pas** encore été refaite : `style.css` reste l'empilement d'origine (66 couleurs en dur, polices de 9 à 22 px, aucune variable, aucun état d'appui ni de focus). Le HUD hockey est toujours un `<span>` dans la ligne de stats.
+
+- Fait : `prototypes/hud-hockey.html`, 3 variantes du HUD (Studio, Diffusion, Coin) derrière le sélecteur du Skill `prototype`. Fichier autonome, hors production. En attente du choix.
+- À faire après le choix : variables de style et composants (boutons, panneaux) dans `style.css` ; HUD en production (`index.html`, `updateHockeyHud` dans `main.js`) ; hiérarchie du panneau de réglages ; écran de préparation de match (équipes, joueurs, périphériques) ; passes `break-ui` et `accessibility-engineering`.

@@ -235,3 +235,17 @@ Privilégie toujours :
 6. Préservation de l'existant.
 
 Ton objectif est de produire le meilleur résultat possible avec le minimum de complexité nécessaire.
+
+## 13. Économie de tokens et audit de simplification (Ponytail)
+
+Utilise `ponytail:ponytail` par défaut pour économiser des tokens :
+- Lis seulement les fichiers et les lignes concernés (`grep`, `sed -n`), pas le dépôt entier.
+- Modifie par correctifs ciblés plutôt que par réécriture complète d'un fichier.
+- Réponds court : l'essentiel d'abord, le détail seulement si je le demande.
+- Ne répète pas ce qui est déjà dans le contexte ni le contenu des fichiers livrés.
+
+Quand je demande un audit de simplification, applique ce prompt avec `ponytail:ponytail-audit` ou `ponytail:ponytail-review` :
+
+> Audite ce code pour repérer la complexité inutile, la logique en double, et les hypothèses qui ne tiennent plus. Montre-moi ce qu'on peut retirer ou simplifier, avec une preuve pour chaque recommandation. Puis propose les plus petits changements qui gardent le fonctionnement actuel.
+
+Une « preuve » est une mesure ou un test réel (recherche des références, test avant/après, exécution), jamais une impression. Ne supprime rien sans mon accord (section 7).

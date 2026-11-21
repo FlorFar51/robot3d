@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototype — HUD Hockey</title>
+<style>
+/* ---------- Jetons communs (couleurs d'équipe et fond repris du projet) ---------- */
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif;
+  --blue:#1aa4dc; --red:#e8553d; --ink:#eef7ff; --ink-2:rgba(238,247,255,.66);
+  --mat:rgba(10,22,38,.56); --mat-edge:rgba(255,255,255,.16);
+  --ease:cubic-bezier(.23,1,.32,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#07101d;color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+/* Décor : une arène pour juger la transparence */
+#arena{position:fixed;inset:0;background:
+  radial-gradient(60% 50% at 50% 55%,#12324a 0,#0b1b2d 60%,#07101d 100%)}
+#arena::before{content:"";position:absolute;inset:14% 16% 12%;border:2px solid rgba(255,255,255,.18);border-radius:18px;
+  background:linear-gradient(90deg,transparent calc(50% - 1px),rgba(255,255,255,.18) 0 calc(50% + 1px),transparent 0)}
+#arena::after{content:"";position:absolute;left:50%;top:52%;width:110px;height:110px;margin:-55px;border:2px solid rgba(255,255,255,.18);border-radius:50%}
+#stage{position:fixed;inset:0;pointer-events:none}
+.lab{font:600 12px/1.2 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.clock,.sc{font-variant-numeric:tabular-nums}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.dot.b,.plate.b .bar{background:var(--blue)} .dot.r,.plate.r .bar{background:var(--red)}
+.pop{animation:pop 260ms var(--ease)}
+@keyframes pop{0%{transform:scale(1.16)}100%{transform:scale(1)}}
+/* Bandeau BUT / pause / fin : entrée 220 ms, sortie plus rapide */
+.banner{opacity:0;transform:translateY(-6px);transition:opacity 150ms ease-out,transform 150ms ease-out;
+  font:600 15px/1 var(--font);letter-spacing:.04em;padding:9px 16px;border-radius:999px;white-space:nowrap;
+  background:var(--mat);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);
+  box-shadow:0 0 0 1px var(--mat-edge) inset,0 8px 24px rgba(0,0,0,.3)}
+[data-banner="1"] .banner{opacity:1;transform:none;transition:opacity 220ms var(--ease),transform 220ms var(--ease)}
+[data-banner="1"][data-team="0"][data-phase="play"] .banner{color:#8fdcff} [data-banner="1"][data-team="1"][data-phase="play"] .banner{color:#ffab9c}
+/* Décompte de départ (match, période) : seul moment où les commandes sont verrouillées */
+.count{position:fixed;inset:0;display:grid;place-items:center;font:600 132px/1 var(--font);letter-spacing:-.03em;
+  opacity:0;transition:opacity 160ms ease-out;text-shadow:0 6px 40px rgba(0,0,0,.5)}
+[data-phase="countdown"] .count{opacity:.95}
+
+/* ---------- Variante 1 · Studio : une capsule centrale, calme ---------- */
+.v1{position:absolute;top:22px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px}
+.v1 .pill{display:flex;align-items:center;gap:20px;padding:10px 28px;border-radius:999px;background:var(--mat);
+  -webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);
+  box-shadow:0 0 0 1px var(--mat-edge) inset,0 14px 36px rgba(0,0,0,.34),0 2px 6px rgba(0,0,0,.2);border-top:1px solid rgba(255,255,255,.22)}
+.v1 .sc{font:600 46px/1 var(--font);letter-spacing:-.02em;min-width:34px;text-align:center}
+.v1 .mid{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:104px}
+.v1 .clock{font:600 24px/1.05 var(--font);letter-spacing:-.01em}
+
+/* ---------- Variante 2 · Diffusion : plaques d'équipe de part et d'autre du chrono ---------- */
+.v2{position:absolute;top:22px;left:50%;transform:translateX(-50%);display:flex;align-items:stretch;gap:0;
+  border-radius:16px;overflow:visible;box-shadow:0 14px 36px rgba(0,0,0,.4)}
+.v2 .plate{display:flex;align-items:center;gap:16px;padding:10px 22px;min-width:164px;position:relative;
+  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0) 60%),var(--tc);}
+.v2 .plate.b{--tc:#0f6f98;border-radius:16px 0 0 16px;justify-content:flex-end} .v2 .plate.r{--tc:#a63a28;border-radius:0 16px 16px 0;justify-content:flex-start}
+.v2 .plate .lab{color:rgba(255,255,255,.86)}
+.v2 .sc{font:700 52px/1 var(--font);letter-spacing:-.025em;min-width:40px;text-align:center}
+.v2 .center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 26px;min-width:140px;
+  background:rgba(7,16,29,.86);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+.v2 .clock{font:700 28px/1.05 var(--font);letter-spacing:-.01em}
+.v2 .banner{position:absolute;top:calc(100% + 10px);left:50%;margin-left:-100px;width:200px;text-align:center}
+
+/* ---------- Variante 3 · Coin : carte compacte qui laisse l'arène libre ---------- */
+.v3{position:absolute;top:18px;left:18px;width:200px;padding:12px 14px;border-radius:16px;background:var(--mat);
+  -webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);
+  box-shadow:0 0 0 1px var(--mat-edge) inset,0 12px 30px rgba(0,0,0,.32)}
+.v3 .row{display:flex;align-items:center;gap:10px;padding:4px 0}
+.v3 .nm{font:600 15px/1 var(--font);flex:1}
+.v3 .sc{font:600 30px/1 var(--font);letter-spacing:-.02em}
+.v3 .foot{display:flex;align-items:baseline;justify-content:space-between;margin-top:8px;padding-top:9px;border-top:1px solid rgba(255,255,255,.14)}
+.v3 .clock{font:600 19px/1 var(--font);letter-spacing:-.01em}
+.v3 .banner{position:absolute;top:calc(100% + 8px);left:0;font-size:14px}
+
+@media (prefers-reduced-motion:reduce){.pop{animation:none}.banner,[data-banner="1"] .banner{transform:none;transition:opacity 150ms ease-out}}
+@media (prefers-reduced-transparency:reduce){:root{--mat:rgba(10,22,38,.96)}.banner,.v1 .pill,.v3,.v2 .center{-webkit-backdrop-filter:none;backdrop-filter:none}}
+@media (prefers-contrast:more){:root{--mat:#0a1626;--mat-edge:rgba(255,255,255,.5)}}
+
+/* ---------- Panneau de démonstration (hors design) ---------- */
+#demo{position:fixed;left:16px;bottom:16px;z-index:9;display:flex;flex-wrap:wrap;gap:6px;max-width:420px;font:12px var(--font)}
+#demo button{font:inherit;color:#dbe9f5;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:7px 10px;cursor:pointer}
+#demo button:hover{background:rgba(255,255,255,.14)} #demo button:active{transform:scale(.97)}
+
+/* ---------- Sélecteur (spécification PICKER.md, à l'identique) ---------- */
+.proto-picker{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2147483647;display:flex;align-items:center;gap:2px;padding:4px;border-radius:999px;background:rgba(10,10,10,.82);-webkit-backdrop-filter:blur(12px) saturate(1.4);backdrop-filter:blur(12px) saturate(1.4);box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 8px 24px rgba(0,0,0,.24),0 2px 6px rgba(0,0,0,.12);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:13px;line-height:1;-webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none}
+.proto-picker-highlight{position:absolute;top:4px;left:0;height:28px;border-radius:999px;background:rgba(255,255,255,.12)}
+.proto-picker[data-ready] .proto-picker-highlight{transition:transform 250ms cubic-bezier(.23,1,.32,1),width 250ms cubic-bezier(.23,1,.32,1)}
+@media (prefers-reduced-motion:reduce){.proto-picker[data-ready] .proto-picker-highlight{transition:none}}
+.proto-picker-item{position:relative;display:flex;align-items:center;height:28px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:rgba(255,255,255,.55);font:inherit;cursor:pointer;transition:color 150ms ease-out,transform 160ms cubic-bezier(.23,1,.32,1)}
+@media (hover:hover) and (pointer:fine){.proto-picker-item:hover{color:rgba(255,255,255,.85)}}
+.proto-picker-item:active{transform:scale(.97)}
+.proto-picker-item:focus-visible{outline:2px solid rgba(255,255,255,.4);outline-offset:2px}
+.proto-picker-item[data-active]{color:#fff}
+.proto-picker-divider{width:1px;height:16px;margin:0 4px;background:rgba(255,255,255,.12)}
+.proto-picker-replay{padding:0 10px;font-size:14px}
+</style>
+</head>
+<body>
+<div id="arena"></div>
+<div id="stage"></div>
+
+<div id="demo" aria-label="Démonstration des états du match">
+  <button data-act="goal0">But bleu</button><button data-act="goal1">But rouge</button>
+  <button data-act="count">Départ 3-2-1</button><button data-act="pause">Fin de période</button>
+  <button data-act="ot">Prolongation</button><button data-act="end">Fin du match</button><button data-act="reset">Remettre à 2-1</button>
+</div>
+
+<nav class="proto-picker" aria-label="Prototype variants">
+  <span class="proto-picker-highlight" aria-hidden="true"></span>
+  <button class="proto-picker-item" data-active aria-current="true">Studio</button>
+  <button class="proto-picker-item">Diffusion</button>
+  <button class="proto-picker-item">Coin</button>
+  <span class="proto-picker-divider" aria-hidden="true"></span>
+  <button class="proto-picker-item proto-picker-replay" aria-label="Replay animation (R)">↻</button>
+</nav>
+
+<script>
+/* ---------- État du match (mêmes champs que hockey.js : score, période, chrono, phase, flash) ---------- */
+const S = { score:[2,1], period:2, clock:102, phase:'play', overtime:false, flash:0, last:0, count:3, winner:-1 };
+const fmt = s => Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+const periodLabel = () => S.overtime ? 'Prolongation' : 'Période ' + S.period + '/3';
+const COUNT = '<div class="count" data-bind="count"></div>';
+function bannerText(){
+  if (S.phase === 'ended') return S.winner < 0 ? 'Match nul' : 'Victoire équipe ' + (S.winner === 0 ? 'bleue' : 'rouge');
+  if (S.phase === 'intermission') return S.overtime ? 'Prolongation' : 'Fin de la période';
+  if (S.flash > 0) return 'But · équipe ' + (S.last === 0 ? 'bleue' : 'rouge');
+  return '';
+}
+let prev = {};
+function apply(){
+  const stage = document.getElementById('stage'), b = bannerText();
+  stage.dataset.phase = S.phase; stage.dataset.team = S.last; stage.dataset.banner = b ? '1' : '0';
+  const vals = { s0:S.score[0], s1:S.score[1], clock:fmt(S.clock), period:periodLabel(), banner:b, count:S.phase === 'countdown' ? S.count : '' };
+  stage.querySelectorAll('[data-bind]').forEach(el => {
+    const k = el.dataset.bind, v = String(vals[k]);
+    if (el.textContent !== v) { if (b === '' && k === 'banner') return; el.textContent = v; if ((k === 's0' || k === 's1') && prev[k] !== undefined && prev[k] !== v) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); } }
+    prev[k] = v;
+  });
+}
+setInterval(() => { if (S.phase === 'play' && S.clock > 0) S.clock--; if (S.flash > 0) S.flash--; apply(); }, 1000);
+const act = {
+  goal0(){ S.phase = 'play'; S.score[0]++; S.last = 0; S.flash = 2; },
+  goal1(){ S.phase = 'play'; S.score[1]++; S.last = 1; S.flash = 2; },
+  count(){ S.phase = 'countdown'; S.count = 3; const t = setInterval(() => { S.count--; if (S.count <= 0) { clearInterval(t); S.phase = 'play'; } apply(); }, 1000); },
+  pause(){ S.phase = 'intermission'; S.clock = 0; setTimeout(() => { if (S.phase === 'intermission') { S.phase = 'play'; S.clock = 120; S.period = Math.min(3, S.period + 1); apply(); } }, 4000); },
+  ot(){ S.phase = 'play'; S.overtime = true; S.clock = 120; },
+  end(){ S.phase = 'ended'; S.winner = S.score[0] === S.score[1] ? -1 : (S.score[0] > S.score[1] ? 0 : 1); },
+  reset(){ Object.assign(S, { score:[2,1], period:2, clock:102, phase:'play', overtime:false, flash:0, winner:-1 }); },
+};
+document.getElementById('demo').addEventListener('click', e => { const a = e.target.dataset.act; if (a) { act[a](); apply(); } });
+
+/* ---------- Les trois variantes ---------- */
+const variants = [
+  () => `<div class="v1"><div class="pill"><span class="dot b"></span><b class="sc" data-bind="s0"></b>
+    <div class="mid"><span class="clock" data-bind="clock"></span><span class="lab" data-bind="period"></span></div>
+    <b class="sc" data-bind="s1"></b><span class="dot r"></span></div><div class="banner" data-bind="banner"></div></div>${COUNT}`,
+  () => `<div class="v2"><div class="plate b"><span class="lab">Bleu</span><b class="sc" data-bind="s0"></b></div>
+    <div class="center"><span class="clock" data-bind="clock"></span><span class="lab" data-bind="period"></span></div>
+    <div class="plate r"><b class="sc" data-bind="s1"></b><span class="lab">Rouge</span></div><div class="banner" data-bind="banner"></div></div>${COUNT}`,
+  () => `<div class="v3"><div class="row"><span class="dot b"></span><span class="nm">Bleu</span><b class="sc" data-bind="s0"></b></div>
+    <div class="row"><span class="dot r"></span><span class="nm">Rouge</span><b class="sc" data-bind="s1"></b></div>
+    <div class="foot"><span class="clock" data-bind="clock"></span><span class="lab" data-bind="period"></span></div>
+    <div class="banner" data-bind="banner"></div></div>${COUNT}`,
+];
+
+/* ---------- Câblage du sélecteur (PICKER.md) ---------- */
+const stage = document.getElementById('stage');
+const picker = document.querySelector('.proto-picker');
+const highlight = picker.querySelector('.proto-picker-highlight');
+const items = [...picker.querySelectorAll('.proto-picker-item:not(.proto-picker-replay)')];
+const replay = picker.querySelector('.proto-picker-replay');
+let current = 0;
+function moveHighlight(){ const el = items[current]; highlight.style.width = el.offsetWidth + 'px'; highlight.style.transform = `translateX(${el.offsetLeft}px)`; }
+function mount(i){ stage.innerHTML = ''; prev = {}; requestAnimationFrame(() => { stage.innerHTML = variants[i](); apply(); }); }
+function setActive(i){
+  if (i < 0 || i >= variants.length) return;
+  current = i;
+  items.forEach((el, j) => { el.toggleAttribute('data-active', j === i); if (j === i) el.setAttribute('aria-current', 'true'); else el.removeAttribute('aria-current'); });
+  moveHighlight();
+  const url = new URL(location); url.searchParams.set('v', i + 1); history.replaceState(null, '', url);
+  mount(i);
+}
+items.forEach((el, i) => el.addEventListener('click', () => setActive(i)));
+replay?.addEventListener('click', () => mount(current));
+window.addEventListener('resize', moveHighlight);
+document.addEventListener('keydown', (e) => {
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const num = parseInt(e.key, 10);
+  if (num >= 1 && num <= variants.length) setActive(num - 1);
+  else if (e.key === 'ArrowRight') setActive((current + 1) % variants.length);
+  else if (e.key === 'ArrowLeft') setActive((current - 1 + variants.length) % variants.length);
+  else if (e.key === 'r' || e.key === 'R') mount(current);
+});
+const requested = parseInt(new URLSearchParams(location.search).get('v'), 10);
+setActive(requested >= 1 && requested <= variants.length ? requested - 1 : 0);
+requestAnimationFrame(() => requestAnimationFrame(() => picker.setAttribute('data-ready', '')));
+</script>
+</body>
+</html>
