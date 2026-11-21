@@ -83,7 +83,7 @@ export function stepMatch(m, dt, puck) {
     const team = m.armed ? goalScorer(puck, c) : -1;
     if (team >= 0) {
       m.score[team]++; m.lastScorer = team; m.flash = RULES.goalBanner; ev.push({ type: 'goal', team });
-      if (m.overtime || m.score[team] >= c.winningScore) { finish(m, ev, team); return ev; }
+      if (m.overtime || c.winningScore > 0 && m.score[team] >= c.winningScore) { finish(m, ev, team); return ev; }
       if (c.resetPuck) puckReturn(m, ev, 'goal'); else m.armed = false;   // sans remise : un palet resté dans le but ne marque qu'une fois
       return ev;
     }
