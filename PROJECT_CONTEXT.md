@@ -88,10 +88,11 @@ Seule correction de comportement : `driveRobot` réveille le robot (`wakeUp`) d�
 | 2v2 | 6,5 | 4 | 2,8 % | 32,7 m/s |
 | 3v3 | 12,9 | 1 | 0 % | 27,1 m/s |
 
+- Vrai navigateur (Chromium headless, rendu logiciel, `esm.sh` redirigé vers les copies npm) : le jeu démarre en 1v1 et 2v2, le HUD s'affiche et se met à jour (décompte, score, chrono, bandeau de but), aucune erreur de console.
 - Deux manettes indépendantes, clavier A et clavier B séparés, avec 0, 1 ou 2 manettes branchées.
 - Tous les réglages listés dans les menus existent et se transmettent par l'URL.
 
-**Non testé** : rendu et HUD dans un vrai navigateur, cadrage des caméras en 2v2/3v3 (distances multipliées par l'échelle du terrain), commandes tactiles, vraies manettes, sensations et équilibrage avec des humains, performances sur appareil lent.
+**Non testé** : le rendu en 3v3 et sur de grands écrans, le cadrage des caméras en 2v2/3v3 (voir section 8), commandes tactiles, vraies manettes, sensations et équilibrage avec des humains, performances sur appareil lent.
 
 ## 7. Problèmes connus, non corrigés
 
@@ -105,7 +106,8 @@ Seule correction de comportement : `driveRobot` réveille le robot (`wakeUp`) d�
 
 ## 8. Interface (état et prochaines étapes)
 
-L'interface n'a **pas** encore été refaite : `style.css` reste l'empilement d'origine (66 couleurs en dur, polices de 9 à 22 px, aucune variable, aucun état d'appui ni de focus). Le HUD hockey est toujours un `<span>` dans la ligne de stats.
+**Fait : HUD hockey « Diffusion »** (choisi parmi 3 variantes). Plaques bleue et rouge de part et d'autre du chrono, bandeau « But / Fin de période / Victoire », décompte 3-2-1 au centre, animation du score. Éléments : `#hockeyBoard` dans `index.html`, styles en fin de `style.css`, mise à jour par `updateHockeyHud` dans `main.js`. En mode hockey, le titre et les statistiques de débogage (`#hud`) sont masqués ; le laboratoire est inchangé.
 
-- Fait : `prototypes/hud-hockey.html`, 3 variantes du HUD (Studio, Diffusion, Coin) derrière le sélecteur du Skill `prototype`. Fichier autonome, hors production. En attente du choix.
-- À faire après le choix : variables de style et composants (boutons, panneaux) dans `style.css` ; HUD en production (`index.html`, `updateHockeyHud` dans `main.js`) ; hiérarchie du panneau de réglages ; écran de préparation de match (équipes, joueurs, périphériques) ; passes `break-ui` et `accessibility-engineering`.
+**Jetons de style** : variables `--ui-*` (police, couleurs d'équipe, matière, courbe) ajoutées en fin de `style.css`. L'ancien CSS (66 couleurs en dur, polices de 9 à 22 px, aucun état d'appui ni de focus) n'est **pas** encore refait.
+
+**À faire** (une pièce par passage) : boutons et panneaux communs sur les jetons ; hiérarchie du panneau de réglages (62 curseurs dans une seule liste) ; écran de préparation de match (format, équipes, joueurs, périphériques) ; passes `break-ui` et `accessibility-engineering` ; cadrage de la caméra par défaut en 2v2/3v3 (le fond du terrain sort de l'écran en vue ISO suivie, constaté sur une capture 1280 × 720).

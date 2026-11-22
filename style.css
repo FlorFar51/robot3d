@@ -37,3 +37,36 @@ body.started #gameNav{display:flex}
 .optionButtons .exportConfig{background:#176b4a;border-color:#55d9a1;color:#effff8}
 
 .optionGroupTitle{grid-column:1/-1;margin:14px 0 0;padding:9px 12px;border-left:4px solid #42bdeb;border-radius:7px;background:#102c40;color:#8de2ff;font-size:15px;letter-spacing:.02em}.optionGroupTitle:first-child{margin-top:0}.optionGroupTitle:nth-of-type(2){border-left-color:#ffb34d;color:#ffd08d}.optionGroupTitle:nth-of-type(7),.optionGroupTitle:nth-of-type(8),.optionGroupTitle:nth-of-type(9){border-left-color:#a98aff;color:#cbb9ff}
+
+/* ===== Système de design (nouveau) : jetons communs ===== */
+:root{
+  --ui-font:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif;
+  --ui-blue:#1aa4dc;--ui-red:#e8553d;--ui-ink:#eef7ff;--ui-ink-2:rgba(238,247,255,.66);
+  --ui-mat:rgba(10,22,38,.56);--ui-edge:rgba(255,255,255,.16);--ui-ease:cubic-bezier(.23,1,.32,1);
+}
+/* ===== HUD hockey, variante « Diffusion » ===== */
+body.hockey #hud{display:none}
+#hockeyBoard{display:none;position:fixed;z-index:3;top:max(env(safe-area-inset-top),18px);left:0;right:0;justify-content:center;pointer-events:none;font-family:var(--ui-font);color:var(--ui-ink);-webkit-font-smoothing:antialiased;text-shadow:none}
+body.hockey.started #hockeyBoard{display:flex}
+#hockeyBoard .hb-bar{position:relative;display:flex;align-items:stretch;border-radius:16px;box-shadow:0 14px 36px rgba(0,0,0,.4)}
+#hockeyBoard .hb-lab{font:600 12px/1.2 var(--ui-font);letter-spacing:.08em;text-transform:uppercase;color:var(--ui-ink-2)}
+#hockeyBoard .hb-sc,#hockeyBoard .hb-clock{font-variant-numeric:tabular-nums}
+#hockeyBoard .hb-plate{display:flex;align-items:center;gap:16px;padding:10px 22px;min-width:164px;background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0) 60%),var(--tc)}
+#hockeyBoard .hb-plate.b{--tc:#0f6f98;border-radius:16px 0 0 16px;justify-content:flex-end}
+#hockeyBoard .hb-plate.r{--tc:#a63a28;border-radius:0 16px 16px 0;justify-content:flex-start}
+#hockeyBoard .hb-plate .hb-lab{color:rgba(255,255,255,.86)}
+#hockeyBoard .hb-sc{font:700 52px/1 var(--ui-font);letter-spacing:-.025em;min-width:40px;text-align:center}
+#hockeyBoard .hb-center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 26px;min-width:140px;background:rgba(7,16,29,.86);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+#hockeyBoard .hb-clock{font:700 28px/1.05 var(--ui-font);letter-spacing:-.01em}
+#hockeyBoard .hb-banner{position:absolute;top:calc(100% + 10px);left:50%;margin-left:-110px;width:220px;text-align:center;opacity:0;transform:translateY(-6px);transition:opacity 150ms ease-out,transform 150ms ease-out;font:600 15px/1 var(--ui-font);letter-spacing:.04em;padding:9px 16px;border-radius:999px;white-space:nowrap;background:var(--ui-mat);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);box-shadow:0 0 0 1px var(--ui-edge) inset,0 8px 24px rgba(0,0,0,.3)}
+#hockeyBoard[data-banner="1"] .hb-banner{opacity:1;transform:none;transition:opacity 220ms var(--ui-ease),transform 220ms var(--ui-ease)}
+#hockeyBoard[data-banner="1"][data-team="0"][data-phase="play"] .hb-banner,#hockeyBoard[data-banner="1"][data-team="0"][data-phase="goal"] .hb-banner{color:#8fdcff}
+#hockeyBoard[data-banner="1"][data-team="1"][data-phase="play"] .hb-banner,#hockeyBoard[data-banner="1"][data-team="1"][data-phase="goal"] .hb-banner{color:#ffab9c}
+#hockeyBoard .hb-count{position:fixed;inset:0;display:grid;place-items:center;font:600 132px/1 var(--ui-font);letter-spacing:-.03em;opacity:0;transition:opacity 160ms ease-out;text-shadow:0 6px 40px rgba(0,0,0,.5)}
+#hockeyBoard[data-phase="countdown"] .hb-count{opacity:.95}
+#hockeyBoard .pop{animation:hb-pop 260ms var(--ui-ease)}
+@keyframes hb-pop{0%{transform:scale(1.16)}100%{transform:scale(1)}}
+@media (max-width:720px){#hockeyBoard .hb-plate{min-width:96px;padding:8px 14px;gap:10px}#hockeyBoard .hb-sc{font-size:36px}#hockeyBoard .hb-center{min-width:96px;padding:6px 14px}#hockeyBoard .hb-clock{font-size:22px}#hockeyBoard .hb-count{font-size:88px}}
+@media (prefers-reduced-motion:reduce){#hockeyBoard .pop{animation:none}#hockeyBoard .hb-banner,#hockeyBoard[data-banner="1"] .hb-banner{transform:none;transition:opacity 150ms ease-out}}
+@media (prefers-reduced-transparency:reduce){#hockeyBoard .hb-banner{background:#0a1626;-webkit-backdrop-filter:none;backdrop-filter:none}#hockeyBoard .hb-center{background:#07101d;-webkit-backdrop-filter:none;backdrop-filter:none}}
+@media (prefers-contrast:more){#hockeyBoard .hb-banner{background:#0a1626;box-shadow:0 0 0 1px rgba(255,255,255,.5) inset}}
