@@ -10,7 +10,6 @@ export const RULES = {
   stallTime: 6,      // s : palet immobile -> remise en jeu au centre
   holdHeight: 4.5,   // m : hauteur où le palet attend la remise en jeu (valeur d'origine)
   periods: 3,
-  aiThrottle: 1,     // plafond de commande des robots IA (0..1) : réglé par essais, voir PROJECT_CONTEXT.md
   goalBanner: 2,     // s : durée d'affichage du bandeau « BUT »
   flipTime: 3,       // s : un robot renversé aussi longtemps est replacé à sa position de départ
 };
@@ -83,7 +82,7 @@ export function stepMatch(m, dt, puck) {
     const team = m.armed ? goalScorer(puck, c) : -1;
     if (team >= 0) {
       m.score[team]++; m.lastScorer = team; m.flash = RULES.goalBanner; ev.push({ type: 'goal', team });
-      if (m.overtime || c.winningScore > 0 && m.score[team] >= c.winningScore) { finish(m, ev, team); return ev; }
+      if (m.overtime || m.score[team] >= c.winningScore) { finish(m, ev, team); return ev; }
       if (c.resetPuck) puckReturn(m, ev, 'goal'); else m.armed = false;   // sans remise : un palet resté dans le but ne marque qu'une fois
       return ev;
     }
@@ -117,20 +116,31 @@ export function stepMatch(m, dt, puck) {
   return ev;
 }
 
+// Difficulté de l'IA, de 1 (débutant) à 10 (expert) : vitesse maximale, délai de réaction (s), erreur de visée (rad)
+// et approche « derrière le palet » (smart) à partir du niveau 6. Réglé par mesures (voir PROJECT_CONTEXT.md) : le gain de
+// vitesse est régulier de 0,3 à 0,6, puis la poussée sature et le contrôle du palet se dégrade ; l'anticipation du palet
+// faisait perdre ; l'approche derrière le palet compte en 2v2/3v3.
+export function aiProfile(level) {
+  const l = Math.min(10, Math.max(1, Math.round(Number.isFinite(level) ? level : 5))), t = (l - 1) / 9;
+  return { throttle: 0.3 + 0.3 * t, delay: 0.3 * (1 - t), noise: 0.35 * (1 - t), smart: l >= 6 };
+}
+
 // IA minimale : le robot le plus proche du palet l'attaque (il se place derrière le palet, sur l'axe
 // palet -> but adverse, puis fonce), les autres défendent entre le palet et leur but.
 // Renvoie {f,t} dans la convention du jeu : f < 0 = rouler crochets en avant ; t > 0 = tourner à droite
 // (yaw négatif). self = {x,z,fx,fz} (fx,fz = direction des crochets).
-export function aiCommand({ self, team, slot, n, role, puck, arena }) {
+export function aiCommand({ self, team, slot, n, role, puck, arena, profile = aiProfile(10), aimNoise = 0 }) {
   const attack = team === 0 ? -1 : 1, own = -attack;
   let tx, tz;
   if (role === 'chase') {
+    const px = puck.x, pz = puck.z;
     const gz = attack * arena.length / 2;
-    let dx = -puck.x, dz = gz - puck.z; const d = Math.hypot(dx, dz) || 1; dx /= d; dz /= d;
-    const rx = puck.x - self.x, rz = puck.z - self.z;
+    let dx = -px, dz = gz - pz; const d = Math.hypot(dx, dz) || 1; dx /= d; dz /= d;
+    const rx = px - self.x, rz = pz - self.z;
     const along = rx * dx + rz * dz, lateral = Math.abs(rx * dz - rz * dx);
-    if (along > 0.5 && lateral < 1.4) { tx = puck.x + dx * 2; tz = puck.z + dz * 2; }
-    else { tx = puck.x - dx * 2.2; tz = puck.z - dz * 2.2; }
+    if (!profile.smart) { tx = px; tz = pz; }                                  // débutant : fonce droit sur le palet
+    else if (along > 0.5 && lateral < 1.4) { tx = px + dx * 2; tz = pz + dz * 2; }
+    else { tx = px - dx * 2.2; tz = pz - dz * 2.2; }
   } else {
     const lim = arena.width / 2 - 2;
     tx = Math.max(-lim, Math.min(lim, puck.x * 0.5 + (slot - (n - 1) / 2) * 4));
@@ -139,8 +149,8 @@ export function aiCommand({ self, team, slot, n, role, puck, arena }) {
   const dx = tx - self.x, dz = tz - self.z, dist = Math.hypot(dx, dz);
   if (role !== 'chase' && dist < 2) return { f: 0, t: 0 };
   // angle signé (yaw positif = de +z vers +x) entre les crochets et la cible
-  const ang = Math.atan2(self.fz * dx - self.fx * dz, self.fx * dx + self.fz * dz);
+  const ang = Math.atan2(self.fz * dx - self.fx * dz, self.fx * dx + self.fz * dz) + aimNoise;
   const t = Math.max(-1, Math.min(1, -2 * ang));
-  const f = -(Math.abs(ang) > 1.2 ? 0 : (1 - Math.abs(ang) / 1.2) * (role === 'chase' ? 1 : 0.8)) * RULES.aiThrottle;
+  const f = -(Math.abs(ang) > 1.2 ? 0 : (1 - Math.abs(ang) / 1.2) * (role === 'chase' ? 1 : 0.8)) * profile.throttle;
   return { f, t };
 }

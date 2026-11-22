@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT — Robot Push Lab
 
-Dernière mise à jour : 21/11/2026 (Hockey 1v1 / 2v2 / 3v3 ; option de réinitialisation du palet ; reprise sans blocage après un but ; prototype du HUD).
+Dernière mise à jour : 21/11/2026 (Hockey 1v1 / 2v2 / 3v3 ; réinitialisation du palet ; reprise sans blocage après un but ; HUD Diffusion ; difficulté d'IA 1-10 ; refonte de l'interface).
 
 ## 1. Architecture
 
@@ -77,7 +77,7 @@ Seule correction de comportement : `driveRobot` réveille le robot (`wakeUp`) d�
 
 ## 6. Tests réalisés (banc d'essai Node : vrai `main.js`, vrai Rapier et Three, DOM simulé)
 
-- 19 tests unitaires de `hockey.js` : 19/19 réussis (dont les deux options de réinitialisation, la continuité après un but, le départ de match/période).
+- 21 tests unitaires de `hockey.js` : 21/21 réussis (dont les deux options de réinitialisation, la continuité après un but, le départ de match/période, la difficulté de l'IA).
 - Continuité après un but, vrai moteur, 1v1/2v2/3v3 × `puckReset` 1 et 0 : aucun robot téléporté, vitesse non remise à zéro, commandes actives pendant tout le but, palet au centre au lâcher (option 1) ou resté dans le but sans double but (option 0), chrono cohérent.
 - Laboratoire (modes manuel et IA) : trajectoires ancien/nouveau code identiques sur 8 s simulées (57 lignes, 18 objets physiques inclus).
 - Matchs IA contre IA (périodes de 60 s, score cible 9, une partie déterministe par ligne, donc indicatif et non statistique) :
@@ -100,14 +100,40 @@ Seule correction de comportement : `driveRobot` réveille le robot (`wakeUp`) d�
 - `base.scale.set(baseWidth/2.3, baseHeight/.65, baseLength/3.25)` dans `tuneRobot` : avec les valeurs par défaut (largeur 2,3, hauteur 0,55, longueur 1,9) le châssis visible est réduit à 85 % en hauteur et 58 % en longueur par rapport à sa boîte physique. Visuel seulement, à vérifier à l'écran.
 - `goalResetDelay` n'était lu par aucun code. Il règle maintenant la durée du retour du palet après un but (défaut 1,4 s ; l'ancien code figeait 0,85 s).
 - README « V15 » et `index.html` « V20 » : numéros de version incohérents.
-- L'IA (`aiThrottle = 1` dans `RULES`) charge à pleine vitesse ; les collisions frontales à ≈ 23 m/s peuvent projeter un robot.
+- L'IA reste simple : elle ne sait pas tirer, passer ni défendre intelligemment. Le niveau 10 est « le plus fort de cette IA », pas un expert (voir section 9).
 - Avec `puckReset = 0`, l'IA récupère mal un palet resté dans le but : 3 buts en 3 minutes de jeu observés en IA contre IA, contre 2 à 7 buts/min avec `puckReset = 1`. Un joueur humain peut le sortir.
 - Les robots non principaux n'ont pas de diagnostic visuel (raycasts) : réservé à `robots[0]`.
 
-## 8. Interface (état et prochaines étapes)
+## 8. Interface
 
-**Fait : HUD hockey « Diffusion »** (choisi parmi 3 variantes). Plaques bleue et rouge de part et d'autre du chrono, bandeau « But / Fin de période / Victoire », décompte 3-2-1 au centre, animation du score. Éléments : `#hockeyBoard` dans `index.html`, styles en fin de `style.css`, mise à jour par `updateHockeyHud` dans `main.js`. En mode hockey, le titre et les statistiques de débogage (`#hud`) sont masqués ; le laboratoire est inchangé.
+**Refonte faite** dans l'esprit Apple classique, clair ou sombre selon le système : `style.css` entièrement réécrit (jetons, boutons avec retour d'appui `scale(.97)` en 160 ms, listes groupées, contrôles segmentés, interrupteur, feuilles translucides, états de focus clavier, mouvement/transparence/contraste réduits). Classes manipulées par le JS conservées (`hidden`, `waiting`, `connected`, `started`, `phone`, `ai`).
 
-**Jetons de style** : variables `--ui-*` (police, couleurs d'équipe, matière, courbe) ajoutées en fin de `style.css`. L'ancien CSS (66 couleurs en dur, polices de 9 à 22 px, aucun état d'appui ni de focus) n'est **pas** encore refait.
+- **Menu** (`index.html`) : configuration de match intégrée (format 1v1/2v2/3v3, joueurs humains, difficulté IA, palet remis au centre) qui pilote les vrais réglages ; laboratoire en liste. Tient en 1280 × 720 sans défilement.
+- **Configuration** : feuille avec recherche, sections groupées, 63 réglages.
+- **Commandes**, **navigation en jeu**, **statistiques du laboratoire**, **commandes tactiles** : même système. Textes en casse normale (JS et HTML).
+- **HUD hockey « Diffusion »** : inchangé, conservé en fin de `style.css`.
 
-**À faire** (une pièce par passage) : boutons et panneaux communs sur les jetons ; hiérarchie du panneau de réglages (62 curseurs dans une seule liste) ; écran de préparation de match (format, équipes, joueurs, périphériques) ; passes `break-ui` et `accessibility-engineering` ; cadrage de la caméra par défaut en 2v2/3v3 (le fond du terrain sort de l'écran en vue ISO suivie, constaté sur une capture 1280 × 720).
+**Vérifié dans Chromium** (clair et sombre) : menu, clics de la configuration de match (les réglages réels changent, les joueurs humains sont ramenés à 2 en repassant en 1v1), recherche de réglages (11 lignes pour « palet »), feuille des commandes, navigation et HUD en jeu, plus petite police 13 px, aucune erreur de console.
+
+**Non vérifié** : contrastes mesurés (WCAG), lecteur d'écran, navigation complète au clavier, commandes tactiles sur téléphone, passe `break-ui` (noms très longs, valeurs extrêmes), écrans plus petits que 1280 × 720.
+
+**Reste à faire** : choix du périphérique par joueur (clavier A/B, manette n) dans le menu ; profil de commandes par manette ; cadrage de la caméra par défaut en 2v2/3v3 (le fond du terrain sort de l'écran en vue Iso suivie).
+
+## 9. IA et difficulté
+
+Réglage `aiLevel` (1 à 10, défaut 5), dans le menu et dans Configuration › Match – Hockey. `aiProfile(niveau)` dans `hockey.js` :
+
+| | Niveau 1 | Niveau 10 |
+|---|---|---|
+| Vitesse maximale (commande) | 0,3 | 0,6 |
+| Délai de réaction | 0,30 s | 0 |
+| Erreur de visée | 0,35 rad | 0 |
+| Approche « derrière le palet » | non (fonce droit) | oui (à partir du niveau 6) |
+
+**Mesures** (vrai moteur, parties de 3 × 30 s, 3 graines × 2 côtés, donc 6 parties par comparaison : tendance, pas statistique) :
+- Délai de réaction : le levier le plus fort (délai 0 : 28 buts contre 18 ; délai 0,3 : 7 contre 12).
+- Vitesse : gain régulier de 0,3 à 0,6 ; au-delà de ≈ 0,65 la poussée sature (le robot plafonne à ≈ 25 m/s) et l'IA perd le contrôle du palet (0,85 : 17 buts contre 28 ; 1,0 : nettement perdant). D'où le plafond à 0,6.
+- Anticipation de la vitesse du palet : faisait perdre dans les deux réglages testés, supprimée.
+- Approche derrière le palet : neutre en 1v1, décisive en équipe (sans elle 7-17 en 2v2 et 9-16 en 3v3), donc réservée aux niveaux 6+.
+- Ordre de force obtenu en 1v1 : 10 bat 8 (5-1), 8 bat 6 (5-1), 6 bat 4 (4-1), 10 bat 5 (5-0), 10 bat 1 (5-1) ; 4 contre 1 à égalité (3-3). En 2v2 et 3v3, le niveau 10 bat les niveaux 5 et 2 à chaque fois (5-0 ou 6-0).
+- Première version (vitesse jusqu'à 1,0, anticipation) : le niveau 10 perdait contre le niveau 3. Corrigée par ces mesures.

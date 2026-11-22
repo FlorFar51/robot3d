@@ -130,7 +130,7 @@ test('IA : sens de rotation et de marche cohérents avec la conduite du jeu', ()
   const left = H.aiCommand({ self: { x: 0, z: 0, fx: 0, fz: 1 }, team: 1, slot: 0, n: 1, role: 'chase', puck: { x: -8, z: 2 }, arena });
   assert.ok(left.t > 0, 'tourne vers -x');
   const ahead = H.aiCommand({ self: { x: 0, z: -9, fx: 0, fz: 1 }, team: 1, slot: 0, n: 1, role: 'chase', puck: { x: 0, z: 0 }, arena });
-  assert.ok(ahead.f < -0.9 && Math.abs(ahead.t) < 0.05, 'palet dans l’axe : fonce droit');
+  assert.ok(ahead.f < -0.55 && Math.abs(ahead.t) < 0.05, 'palet dans l’axe : fonce droit');
   const behind = H.aiCommand({ self: { x: 0, z: 0, fx: 0, fz: 1 }, team: 1, slot: 0, n: 1, role: 'chase', puck: { x: 0, z: -9 }, arena });
   assert.ok(behind.f === 0 && Math.abs(behind.t) > 0.5, 'palet derrière : pivote d’abord');
   const guard = H.aiCommand({ self: { x: 0, z: -arena.length * 0.32, fx: 0, fz: 1 }, team: 1, slot: 0, n: 1, role: 'guard', puck: { x: 0, z: 5 }, arena });
@@ -207,4 +207,26 @@ test('bandeau BUT : visible un court instant, avec ou sans remise du palet', () 
     H.stepMatch(m, 0.01, inGoal); assert.ok(m.flash > 1); assert.equal(m.lastScorer, 1);
     tick(m, 2.5, onIce); assert.equal(m.flash, 0);
   }
+});
+
+test('difficulté IA : de 1 à 10, plus rapide, plus réactive et plus précise (vitesse plafonnée à 0,6)', () => {
+  const p = (l) => H.aiProfile(l);
+  for (let l = 1; l < 10; l++) {
+    assert.ok(p(l + 1).throttle > p(l).throttle, `vitesse croissante ${l}->${l + 1}`);
+    assert.ok(p(l + 1).delay < p(l).delay, `réaction plus rapide ${l}->${l + 1}`);
+    assert.ok(p(l + 1).noise < p(l).noise, `visée plus précise ${l}->${l + 1}`);
+  }
+  assert.ok(Math.abs(p(10).throttle - 0.6) < 1e-9 && p(10).delay === 0 && p(10).noise === 0 && p(10).smart === true);
+  assert.ok(p(1).smart === false && p(5).smart === false && p(6).smart === true && Math.abs(p(1).throttle - 0.3) < 1e-9);
+  assert.deepEqual(p(0), p(1)); assert.deepEqual(p(11), p(10)); assert.deepEqual(p(5.4), p(5)); assert.deepEqual(p(NaN), p(5));
+});
+
+test('difficulté IA : plafond de vitesse et erreur de visée', () => {
+  const arena = H.arenaFor(1, BASE), self = { x: 0, z: -9, fx: 0, fz: 1 }, puck = { x: 0, z: 0 };
+  const run = (level, extra = {}) => H.aiCommand({ self, team: 1, slot: 0, n: 1, role: 'chase', puck, arena, profile: H.aiProfile(level), ...extra });
+  assert.ok(Math.abs(run(1).f) <= H.aiProfile(1).throttle + 1e-9, 'niveau 1 : vitesse plafonnée');
+  assert.ok(Math.abs(run(10).f) > 0.55 && Math.abs(run(10).f) <= 0.6 + 1e-9, 'niveau 10 : 0,6 au maximum');
+  assert.ok(Math.abs(run(10).t) < 0.05 && Math.abs(run(10, { aimNoise: 0.3 }).t) > 0.3, 'une erreur de visée fait dévier la rotation');
+  const aside = { x: 3, z: 8 }, c = (profile) => H.aiCommand({ self: { x: 0, z: 0, fx: 0, fz: 1 }, team: 1, slot: 0, n: 1, role: 'chase', puck: aside, arena, profile });
+  assert.notDeepEqual(c(H.aiProfile(10)), c({ ...H.aiProfile(10), smart: false }), 'à vitesse égale, « smart » se place derrière le palet au lieu de foncer droit');
 });
