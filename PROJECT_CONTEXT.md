@@ -30,6 +30,7 @@ Sources : IIHF Official Rule Book 2026/27 v1.0 (juin 2026). Lu : règle 1 (patin
 | Remise en jeu après un but | Réglage `puckReset` (Configuration › Match – Hockey). **1** : le palet remonte à 4,5 m au centre pendant `goalResetDelay` (1,4 s) puis est lâché. **0** : le palet reste où il est et le jeu continue ; un palet resté dans le but ne marque qu'une fois, il doit ressortir. Dans les deux cas les robots **ne sont ni bloqués, ni repositionnés, ni ralentis** et le chrono s'arrête seulement pendant le retour du palet | Fait |
 | Palet sorti / coincé (3 s) | Bandes pleines : le palet ne sort pas. Palet immobile (< 0,4 m/s) 6 s sur le terrain (pas au fond d'un but) ou hors du terrain → le palet revient au centre comme après un but, sans point et sans toucher aux robots | Fait |
 | Départ de match et de période | Seul moment où les commandes sont verrouillées : robots replacés, décompte 3-2-1, puis lâcher | Fait |
+| Mode solo (1v0) | Un seul robot, sans adversaire (section 4) | Fait |
 | Prolongation | But en or, `overtimeDuration` s (défaut 120), puis match nul | Fait (règle 84 non lue : choix personnel) |
 | Gardien, hors-jeu, icing, pénalités, changements | Pas en V1 | Reporté |
 | Contacts autorisés, interférence | Contacts libres. Un robot renversé plus de 3 s est replacé à son départ | Fait (non issu des règles IIHF) |
@@ -53,14 +54,15 @@ Choix : le 1v1 garde le terrain et le but **déjà réglés** (20 × 33 m ; but 
 
 ## 4. Contrôleurs
 
-Joueurs humains = les `humanPlayers` premiers robots (ordre : équipe 0 / équipe 1 en alternance). Les autres sont pilotés par l'IA de `hockey.js`.
+Les joueurs humains sont les `humanPlayers` premiers robots (équipe 0 / équipe 1 en alternance) ; les autres sont pilotés par l'IA de `hockey.js` (niveau `aiLevel`, section 9).
 
-- Joueur 1 : clavier A (touches de COMMANDES, modifiables) + manette 1. Inchangé.
-- Joueur 2 : manette 2 si présente, + clavier B (flèches, fixes).
-- Joueur 3+ : manette de même numéro, sinon IA.
-- Toutes les manettes partagent la même configuration (axes, inversions) : celle du panneau COMMANDES.
+**Attribution par joueur** (menu › Hockey, une ligne par joueur humain, transmise par le paramètre d'URL `devices`) :
+- **Automatique** (défaut) : joueur 1 = clavier A (touches de COMMANDES, modifiables) + manette 1 ; joueur 2 = manette 2 + clavier B ; joueur 3 et suivants = manette de même numéro, sinon IA.
+- **Clavier A** (Z S Q D, modifiable), **Clavier B** (flèches, fixes), **Manette 1 à 4** (n-ième manette connectée) : le joueur n'utilise que ce périphérique.
+- Pas de conflit : un périphérique choisi par un joueur est grisé chez les autres, et un joueur en « Automatique » n'empiète pas sur un périphérique choisi par un autre. Une manette choisie mais absente laisse le robot immobile (le menu affiche « non détectée »).
+- Toutes les manettes partagent la même configuration d'axes et d'inversions (panneau COMMANDES). Les boutons reset/caméra/diagnostic viennent de la première manette connectée.
 
-Non fait : choix manuel du périphérique par joueur, profil par manette, boutons reset/caméra pour les joueurs 2+.
+**Mode solo (1v0)** : bouton « Solo » du menu (réglage `solo`). Un seul robot (équipe bleue), terrain 1v1, aucun adversaire ni IA. Un but dans le but adverse compte pour le joueur ; un but contre son camp compte pour l'équipe rouge absente. Les règles de match (périodes, prolongation, score cible) restent celles du hockey.
 
 ## 5. Physique
 
@@ -89,7 +91,8 @@ Seule correction de comportement : `driveRobot` réveille le robot (`wakeUp`) d�
 | 3v3 | 12,9 | 1 | 0 % | 27,1 m/s |
 
 - Vrai navigateur (Chromium headless, rendu logiciel, `esm.sh` redirigé vers les copies npm) : le jeu démarre en 1v1 et 2v2, le HUD s'affiche et se met à jour (décompte, score, chrono, bandeau de but), aucune erreur de console.
-- Deux manettes indépendantes, clavier A et clavier B séparés, avec 0, 1 ou 2 manettes branchées.
+- Attribution des périphériques, 15 scénarios avec de fausses manettes branchées sur le vrai moteur (clavier A/B, manettes 1-2, échange des rôles, conflit, manette absente, « Automatique ») : tous conformes.
+- Mode solo, avec et sans remise du palet : 8 contrôles chacun (un seul robot, normalisation d'une URL contradictoire, pilotage, buts dans les deux sens).
 - Tous les réglages listés dans les menus existent et se transmettent par l'URL.
 
 **Non testé** : le rendu en 3v3 et sur de grands écrans, le cadrage des caméras en 2v2/3v3 (voir section 8), commandes tactiles, vraies manettes, sensations et équilibrage avec des humains, performances sur appareil lent.
@@ -115,9 +118,11 @@ Seule correction de comportement : `driveRobot` réveille le robot (`wakeUp`) d�
 
 **Vérifié dans Chromium** (clair et sombre) : menu, clics de la configuration de match (les réglages réels changent, les joueurs humains sont ramenés à 2 en repassant en 1v1), recherche de réglages (11 lignes pour « palet »), feuille des commandes, navigation et HUD en jeu, plus petite police 13 px, aucune erreur de console.
 
-**Non vérifié** : contrastes mesurés (WCAG), lecteur d'écran, navigation complète au clavier, commandes tactiles sur téléphone, passe `break-ui` (noms très longs, valeurs extrêmes), écrans plus petits que 1280 × 720.
+**Contrastes (WCAG AA, texte)** : mesurés sur les pixels rendus dans Chromium, clair et sombre. Avant correctifs : 58 textes sous 4,5:1 sur 172 (texte secondaire gris et texte bleu en clair, blanc sur bleu du bouton principal en sombre). Après : 252 textes d'interface (menu en 3 états, configuration, commandes) et 52 textes en jeu, dont le pire cas sur fond blanc, **0 sous le seuil**. Correctifs : texte secondaire plus foncé, bleu d'accent dédié au texte (`--accent-text`), fond de bouton dédié (`--accent-btn`), matières translucides plus opaques en jeu, tuile sombre derrière le décompte. Non mesuré : contrastes des composants non textuels (bordures, interrupteur, anneau de focus), menu déroulant natif des sélecteurs, mesure sur l'ensemble des images d'une partie (une seule image par écran).
 
-**Reste à faire** : choix du périphérique par joueur (clavier A/B, manette n) dans le menu ; profil de commandes par manette ; cadrage de la caméra par défaut en 2v2/3v3 (le fond du terrain sort de l'écran en vue Iso suivie).
+**Non vérifié** : lecteur d'écran, navigation complète au clavier, commandes tactiles sur téléphone, passe `break-ui` (noms très longs, valeurs extrêmes), écrans plus petits que 1280 × 720.
+
+**Reste à faire** : profil de commandes par manette ; boutons reset/caméra par joueur ; cadrage de la caméra par défaut en 2v2/3v3 (le fond du terrain sort de l'écran en vue Iso suivie).
 
 ## 9. IA et difficulté
 
