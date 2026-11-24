@@ -112,7 +112,7 @@ Seule correction de comportement : `driveRobot` réveille le robot (`wakeUp`) d�
 **Refonte faite** dans l'esprit Apple classique, clair ou sombre selon le système : `style.css` entièrement réécrit (jetons, boutons avec retour d'appui `scale(.97)` en 160 ms, listes groupées, contrôles segmentés, interrupteur, feuilles translucides, états de focus clavier, mouvement/transparence/contraste réduits). Classes manipulées par le JS conservées (`hidden`, `waiting`, `connected`, `started`, `phone`, `ai`).
 
 - **Menu** (`index.html`) : configuration de match intégrée (format 1v1/2v2/3v3, joueurs humains, difficulté IA, palet remis au centre) qui pilote les vrais réglages ; laboratoire en liste. Tient en 1280 × 720 sans défilement.
-- **Configuration** : feuille avec recherche, sections groupées, 63 réglages.
+- **Configuration** : feuille avec recherche, sections groupées, 32 réglages.
 - **Commandes**, **navigation en jeu**, **statistiques du laboratoire**, **commandes tactiles** : même système. Textes en casse normale (JS et HTML).
 - **HUD hockey « Diffusion »** : inchangé, conservé en fin de `style.css`.
 
@@ -142,3 +142,39 @@ Réglage `aiLevel` (1 à 10, défaut 5), dans le menu et dans Configuration › 
 - Approche derrière le palet : neutre en 1v1, décisive en équipe (sans elle 7-17 en 2v2 et 9-16 en 3v3), donc réservée aux niveaux 6+.
 - Ordre de force obtenu en 1v1 : 10 bat 8 (5-1), 8 bat 6 (5-1), 6 bat 4 (4-1), 10 bat 5 (5-0), 10 bat 1 (5-1) ; 4 contre 1 à égalité (3-3). En 2v2 et 3v3, le niveau 10 bat les niveaux 5 et 2 à chaque fois (5-0 ou 6-0).
 - Première version (vitesse jusqu'à 1,0, anticipation) : le niveau 10 perdait contre le niveau 3. Corrigée par ces mesures.
+
+## 10. Réglages supprimés (audit de simplification)
+
+Méthode : chacun des 55 réglages physiques, de caméra et de terrain a été mis à son minimum puis à son maximum, dans 3 scénarios identiques et reproductibles (laboratoire manuel, laboratoire IA, hockey avec tirs dans le but et contre le mur), en comparant l'état complet des corps (position, rotation, vitesse) ; un 4e scénario fait chuter un robot de 10 kg sous gravité maximale. Les 9 réglages de match (format, durées, IA, palet…) n'ont pas été testés : ils ne sont pas physiques.
+
+**Supprimés (64 → 58), sans aucun effet sur toute leur plage :**
+
+| Réglage | Preuve |
+|---|---|
+| `goalHeight` (hauteur des buts) | Lu par aucune ligne de code ; aucun effet mesuré. |
+| `playerForce` (force moteur joueur) | Bornait une force qui ne dépasse jamais 595 N (accélération max 59,5 × masse max 10) alors que le curseur commençait à 1 020 N : ne pouvait jamais agir. Min, max et 10⁷ N identiques ; seule la valeur 1 N, hors curseur, change quelque chose. |
+| `brake` (frein au relâchement) | Effet seulement sous ≈ 10 N ; curseur de 30 à 270 N : inerte. |
+| `brakeDeceleration` et `brakePower` (frein en marche arrière) | Effet seulement sous ≈ 32 N au total ; curseurs ≥ 61 N pour toute masse : inertes. `brakePower` n'était qu'un plafond dans un `min()`. |
+| `maxSuspensionForce` | Min (1 500), max et 10⁷ N identiques, y compris dans la chute d'un robot de 10 kg ; seule la valeur 1 N change. |
+
+Remplacés par une constante de 75 N par roue pour les deux freins (au-dessus des seuils mesurés) ; la suspension garde la valeur par défaut de la bibliothèque.
+
+**Preuve d'équivalence** : ancien et nouveau code donnent des états physiques strictement identiques sur 11 configurations (4 scénarios, masses 2, 4 et 10 kg, accélération et vitesse maximales), et le laboratoire reste identique au code d'origine.
+
+**Conservés** : tous les autres réglages physiques ont un effet mesuré (au moins dans un scénario). Les 6 réglages de caméra n'ont aucun effet physique (vérifié) mais règlent la vue : conservés. `aiForce` n'agit que sous ≈ 96 N (le curseur va de 35 à 295 N) : conservé car il agit dans une partie de sa plage.
+
+**Limite** : « aucun effet » est établi dans ces scénarios et sur la plage des curseurs ; une situation non couverte pourrait exister. Les anciennes configurations exportées qui contiennent les clés supprimées restent chargeables (clés ignorées).
+
+## 11. Simplification des réglages (58 → 32)
+
+Principe : seuls les vrais leviers de jeu restent des curseurs ; le reste devient une constante égale à l'ancienne valeur par défaut, donc la physique par défaut ne change pas. Les constantes se modifient dans la ligne `Object.assign(settings,{…})` de `main.js` (juste après la lecture de l'URL) ; elles ne sont plus réglables depuis l'interface ni par l'URL.
+
+**Suspension : 7 réglages → 2.** `stiffness` (raideur) et `damping` (amortissement unique : détente = `damping`, compression = 0,75 × `damping`, le rapport des anciens défauts 6 et 4,5). Fixés : `suspensionRest` 0,16, `wheelHeight` 0,18, `wheelRadius` 0,29. `grip` (adhérence des roues) reste.
+
+**Autres réglages fixés** (valeur = ancien défaut) : `baseHeight`, `hookThickness`, `centerOfMassX`, `centerOfMassZ`, `aiForce`, `aiSpin`, `gravity`, `restitution`, `timestep` (120 Hz), `wallHeight`, `wallThickness`, `goalDepth`, `hockeyPuckHeight`, `puckHeight`, `puckRestitution`, `puckFriction`, et les 6 réglages de caméra.
+
+**Réglages conservés (32)** : Match – Hockey (9) ; Terrain – Hockey : `fieldWidth`, `fieldLength`, `goalWidth` ; Palet – Hockey : diamètre, masse, rebond, glissement ; Robot : `baseWidth`, `baseLength`, `hookLength`, `mass`, `centerOfMassY` ; Moteurs : `maxSpeed`, `acceleration`, `playerSpin` ; Suspension et roues : `stiffness`, `damping`, `grip` ; Physique : `friction`, `linearDamping`, `angularDamping` ; Palets – laboratoire : diamètre, nombre.
+
+**Preuve d'équivalence** : la version à 58 réglages et celle à 32 donnent des états physiques strictement identiques sur 23 configurations (laboratoire manuel et IA, hockey, chute d'un robot de 10 kg ; masses, raideur, amortissement 3 / 9 / 10 avec l'ancien couple compression-détente correspondant, adhérence, vitesses, dimensions du robot et du terrain, palets). Laboratoire identique au code d'origine ; 21 tests unitaires, continuité, solo et périphériques inchangés ; 32 lignes dans la feuille de configuration, sans erreur de console.
+
+**Limite** : la physique est identique aux valeurs par défaut et aux valeurs testées des curseurs conservés ; les valeurs figées ne peuvent plus être explorées sans modifier le code.
