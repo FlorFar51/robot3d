@@ -293,12 +293,6 @@ test('nez arrondi : le contour d\'affichage a la même surface que les polygones
   assert.ok(Math.abs(a - b) < 1e-9, `${a} vs ${b}`);
 });
 
-test('IA : la rotation déjà en cours est freinée (pas de dépassement de cible)', () => {
-  const arena = H.arenaFor(1, BASE), base = { self: { x: 0, z: 0, fx: 0, fz: 1 }, team: 1, slot: 0, n: 1, role: 'chase', puck: { x: 3, z: 8 }, arena };
-  const still = H.aiCommand(base), spinning = H.aiCommand({ ...base, self: { ...base.self, w: 4 } });
-  assert.ok(still.t < 0 && spinning.t > still.t, 'même cible, mais déjà lancé vers elle : moins de couple');
-});
-
 test('IA : le point d\'approche reste dans le ring et on attaque le palet collé au mur', () => {
   const arena = { width: 1.65, length: 3.3, unit: 0.1 };
   const c = H.aiCommand({ self: { x: 0.72, z: 0.75, fx: 0, fz: 1 }, team: 1, slot: 0, n: 1, role: 'chase', puck: { x: 0.8, z: 0.89 }, arena, profile: H.aiProfile(10) });

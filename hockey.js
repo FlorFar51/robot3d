@@ -159,8 +159,8 @@ export function aiCommand({ self, team, slot, n, role, puck, arena, profile = ai
   if (role !== 'chase' && dist < 2 * u) return { f: 0, t: 0 };
   // angle signé (yaw positif = de +z vers +x) entre les crochets et la cible
   const ang = Math.atan2(self.fz * dx - self.fx * dz, self.fx * dx + self.fz * dz) + aimNoise;
-  // correcteur proportionnel + amortissement sur la vitesse de rotation (self.w) : sans lui le robot dépasse sa cible et tourne en rond
-  const t = Math.max(-1, Math.min(1, -1.0 * ang + 0.5 * (self.w || 0)));
+  // t est une vitesse de rotation demandée (le robot l'asservit) : un simple gain proportionnel sur l'angle suffit, sans dépassement
+  const t = Math.max(-1, Math.min(1, -0.9 * ang));
   // près du palet on ralentit : à pleine vitesse le nez le renvoie au lieu de le conduire
   const near = role === 'chase' && Math.hypot(puck.x - self.x, puck.z - self.z) < 3 * u ? NEAR_PUCK_SLOW : 1;
   const f = -(Math.abs(ang) > 1.2 ? 0 : (1 - Math.abs(ang) / 1.2) * (role === 'chase' ? 1 : 0.8)) * profile.throttle * near;
@@ -198,13 +198,15 @@ export function noseParts(sh, steps = 10) {
 
 // Conformité au règlement Hockey Micro. Renvoie la liste des écarts (vide = conforme).
 export function microCheck(s) {
-  const bad = [], sh = scoopShape({ baseWidth: s.baseWidth, noseLength: s.hookLength, puckDiameter: s.hockeyPuckDiameter,
-    radius: s.scoopRadius, depth: s.scoopDepth });
+  const bad = [];
   if (s.mass > 0.454 + 1e-9) bad.push('masse > 454 g');
   if (s.baseWidth > 0.2 + 1e-9) bad.push('largeur > 20 cm');
   if (s.baseLength + s.hookLength > 0.2 + 1e-9) bad.push('longueur > 20 cm');
-  if (sh.opening < 0.04 - 1e-9) bad.push('ouverture du nez < 40 mm');
-  if (s.scoopDepth > s.hockeyPuckDiameter / 2 + 1e-9) bad.push('creux plus profond que la moitié du palet');
+  if (!s.importedRobot) {   // nez paramétrique ; pour un robot importé, la forme du nez n'est pas contrôlée
+    const sh = scoopShape({ baseWidth: s.baseWidth, noseLength: s.hookLength, puckDiameter: s.hockeyPuckDiameter, radius: s.scoopRadius, depth: s.scoopDepth });
+    if (sh.opening < 0.04 - 1e-9) bad.push('ouverture du nez < 40 mm');
+    if (s.scoopDepth > s.hockeyPuckDiameter / 2 + 1e-9) bad.push('creux plus profond que la moitié du palet');
+  }
   return bad;
 }
 
