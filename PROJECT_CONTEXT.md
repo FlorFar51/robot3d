@@ -178,3 +178,26 @@ Principe : seuls les vrais leviers de jeu restent des curseurs ; le reste devien
 **Preuve d'équivalence** : la version à 58 réglages et celle à 32 donnent des états physiques strictement identiques sur 23 configurations (laboratoire manuel et IA, hockey, chute d'un robot de 10 kg ; masses, raideur, amortissement 3 / 9 / 10 avec l'ancien couple compression-détente correspondant, adhérence, vitesses, dimensions du robot et du terrain, palets). Laboratoire identique au code d'origine ; 21 tests unitaires, continuité, solo et périphériques inchangés ; 32 lignes dans la feuille de configuration, sans erreur de console.
 
 **Limite** : la physique est identique aux valeurs par défaut et aux valeurs testées des curseurs conservés ; les valeurs figées ne peuvent plus être explorées sans modifier le code.
+
+## Calibrage Hockey Micro (règlement Robocore 15/01/2024) — ajouté par Claude
+
+Tout est maintenant en mètres réels (SI). Source : `Regras - Hockey.pdf` (§2.2, 2.8.5, 2.8.6, 3.2).
+
+| Élément | Valeur | Origine |
+|---|---|---|
+| Robot | 454 g, châssis 0,18 × 0,13 m + nez 0,07 m (≤ 0,20 m) | règlement §2.2 |
+| Ring | 3,3 × 1,65 m (45 % du Pro), fixe quel que soit le format | §3.2.1 (2,93–3,66 × 1,46–1,83) |
+| Buts / murs / coins | 0,52 m, 0,18 m de haut, coins de rayon 0,135 m | §3.2.2, 3.2.3, 3.2.1 |
+| Palet | Ø 31,7 × 12,7 mm, **12 g (estimation, non fixée par le règlement)** | §3.2.5 |
+| Vitesse max / accélération | 3 m/s / 6 m/s² commandés (≈ 3,2 m/s² mesurés) | **hypothèse**, à vérifier sur un vrai robot |
+| Rotation | ≈ 8 rad/s après 1 s (playerSpin 0,5) | **hypothèse** |
+| Grip roues / friction palet / rebond | 1,1 / 0,25 / 0,4 | **hypothèse** (caoutchouc sur sol dur) |
+
+- `hockeyPuckSlide` et `hockeyPuckBounce` sont maintenant les coefficients réels (friction = minimum, rebond = maximum des deux surfaces).
+- Nez arrondi : `hockey.js` → `scoopShape` (règles §2.8.5 : creux ≤ ½ palet ; §2.8.6 : ouverture ≥ 40 mm), `noseParts` (collisions, polygones convexes) et `noseOutline` (affichage). Réglages `scoopRadius`, `scoopDepth`. `microCheck` affiche la conformité dans le menu.
+- Centre de gravité avant/arrière : réglage `centerOfMassZ` rétabli (0 = sur l'essieu ; > 0 charge le nez et réduit la traction : à +6 cm le robot ne démarre plus).
+- Robot importé (à faire) : fournir à `noseParts` les polygones convexes issus du modèle ; la boucle de collision de `createRobot` les utilise déjà.
+- Corrigé : `tuneRobot` mettait le châssis visuel à l'échelle de l'ancien modèle (÷2,3) ; il utilise maintenant `chassisSize`.
+- IA réglée pour le Micro (causes trouvées au banc : le correcteur de cap n'avait pas d'amortissement et faisait tourner le robot en rond ; le point d'approche tombait hors du ring près des murs ; le robot renvoyait le palet à pleine vitesse). Corrections : amortissement sur la vitesse de rotation (`self.w`), point d'approche ramené dans le ring (on attaque le palet s'il est déjà atteint), vitesse × 0,8 à moins de 30 cm du palet (`NEAR_PUCK_SLOW`), sortie d'impasse dans `thinkAI` (recul de 0,6 s après 0,8 s bloqué).
+  Mesures sur 12 min simulées : IA seule niv. 10 ≈ 1,1 but/min ; IA contre IA niv. 10 : 1v1 1,8, 2v2 0,7, 3v3 1,1 but/min ; niv. 6-8 : 0,3 à 1,2. Niv. 5 et moins : marque rarement, par conception (pas de visée vers le but). Ancien terrain : ≈ 2,5 but/min en 1v1. Pas de mesure contre un humain.
+- Le laboratoire (caisses, murs, rampe) a été réduit d'un facteur 10 ; démarrage vérifié, comportement non testé en détail.

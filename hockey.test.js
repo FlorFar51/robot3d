@@ -226,7 +226,86 @@ test('difficulté IA : plafond de vitesse et erreur de visée', () => {
   const run = (level, extra = {}) => H.aiCommand({ self, team: 1, slot: 0, n: 1, role: 'chase', puck, arena, profile: H.aiProfile(level), ...extra });
   assert.ok(Math.abs(run(1).f) <= H.aiProfile(1).throttle + 1e-9, 'niveau 1 : vitesse plafonnée');
   assert.ok(Math.abs(run(10).f) > 0.55 && Math.abs(run(10).f) <= 0.6 + 1e-9, 'niveau 10 : 0,6 au maximum');
-  assert.ok(Math.abs(run(10).t) < 0.05 && Math.abs(run(10, { aimNoise: 0.3 }).t) > 0.3, 'une erreur de visée fait dévier la rotation');
+  assert.ok(Math.abs(run(10).t) < 0.05 && Math.abs(run(10, { aimNoise: 0.5 }).t) > 0.3, 'une erreur de visée fait dévier la rotation');
   const aside = { x: 3, z: 8 }, c = (profile) => H.aiCommand({ self: { x: 0, z: 0, fx: 0, fz: 1 }, team: 1, slot: 0, n: 1, role: 'chase', puck: aside, arena, profile });
   assert.notDeepEqual(c(H.aiProfile(10)), c({ ...H.aiProfile(10), smart: false }), 'à vitesse égale, « smart » se place derrière le palet au lieu de foncer droit');
+});
+
+// ---- Hockey Micro (règlement Robocore 15/01/2024) ----
+const MICRO = { fieldWidth: 1.65, fieldLength: 3.3, fieldGrow: 0 };
+const microSettings = { mass: 0.454, baseWidth: 0.18, baseLength: 0.13, hookLength: 0.07, hockeyPuckDiameter: 0.0317, scoopRadius: 0.0185, scoopDepth: 0.0158 };
+
+test('Micro : le ring ne grandit pas avec le format (un seul ring dans le règlement)', () => {
+  for (const n of [1, 2, 3]) assert.deepEqual(H.arenaFor(n, MICRO), { width: 1.65, length: 3.3, scale: 1 });
+});
+
+test('Micro : palet sorti et palet immobile suivent l\'échelle (unit)', () => {
+  const c = { arenaW: 1.65, arenaL: 3.3, goalDepth: 0.18, wallH: 0.18, unit: 0.1 };
+  assert.equal(H.puckOut({ x: 0, y: 0.01, z: 3.3 / 2 + 0.18 }, c), false, 'au fond du but');
+  assert.equal(H.puckOut({ x: 1.0, y: 0.01, z: 0 }, c), true, '1,0 m > demi-largeur 0,825 + marge 0,1 m');
+  const m = H.createMatch({ ...cfg({ arenaW: 1.65, arenaL: 3.3, goalWidth: 0.52, goalDepth: 0.18, wallH: 0.18, puckRadius: 0.016, unit: 0.1 }) });
+  m.phase = 'play';
+  const ev = []; for (let t = 0; t < 6.2; t += 0.01) ev.push(...H.stepMatch(m, 0.01, { x: 0, y: 0.01, z: 0, speed: 0.03 }));
+  assert.ok(ev.some(e => e.type === 'stall'), '0,03 m/s < 0,04 m/s : palet immobile -> remise en jeu');
+});
+
+test('nez arrondi : creux limité à la moitié du palet et ouverture >= 40 mm (§2.8.5, 2.8.6)', () => {
+  const base = { baseWidth: 0.18, noseLength: 0.07, puckDiameter: 0.0317 };
+  const deep = H.scoopShape({ ...base, radius: 0.02, depth: 0.05 });
+  assert.ok(deep.depth <= 0.0317 / 2 + 1e-12, 'profondeur ramenée au rayon du palet');
+  const narrow = H.scoopShape({ ...base, radius: 0.017, depth: 0.0158 });
+  assert.ok(narrow.opening >= 0.04 - 1e-9, 'rayon agrandi pour garder 40 mm');
+  assert.ok(narrow.radius >= 0.0317 / 2, 'le palet tient dans le creux');
+  const huge = H.scoopShape({ ...base, radius: 0.3, depth: 0.0158 });
+  assert.ok(huge.opening <= 0.18 - 0.02 + 1e-9, 'ouverture limitée à la largeur du robot moins les parois');
+});
+
+test('nez arrondi : polygones convexes, creux symétrique, rien devant la pointe', () => {
+  const sh = H.scoopShape({ baseWidth: 0.18, noseLength: 0.07, puckDiameter: 0.0317, radius: 0.0185, depth: 0.0158 });
+  const parts = H.noseParts(sh, 10);
+  assert.equal(parts.length, 12);
+  for (const poly of parts) for (const [x, z] of poly) assert.ok(z >= -1e-12 && z <= 0.07 + 1e-12 && Math.abs(x) <= 0.09 + 1e-12);
+  const area = poly => Math.abs(poly.reduce((a, [x, z], i) => { const [x2, z2] = poly[(i + 1) % poly.length]; return a + x * z2 - x2 * z; }, 0)) / 2;
+  const total = parts.reduce((a, p) => a + area(p), 0), full = 0.18 * 0.07;
+  assert.ok(total < full && total > full * 0.8, 'le creux retire de la matière, mais pas tout');
+  const left = parts.slice(2, 7).reduce((a, p) => a + area(p), 0), right = parts.slice(7).reduce((a, p) => a + area(p), 0);
+  assert.ok(Math.abs(left - right) < 1e-9, 'symétrique');
+});
+
+test('Micro : contrôle de conformité', () => {
+  assert.deepEqual(H.microCheck(microSettings), []);
+  assert.ok(H.microCheck({ ...microSettings, mass: 0.6 }).includes('masse > 454 g'));
+  assert.ok(H.microCheck({ ...microSettings, hookLength: 0.1 }).includes('longueur > 20 cm'));
+  assert.ok(H.microCheck({ ...microSettings, baseWidth: 0.25 }).includes('largeur > 20 cm'));
+  assert.ok(H.microCheck({ ...microSettings, scoopDepth: 0.03 }).includes('creux plus profond que la moitié du palet'));
+});
+
+test('IA à l\'échelle Micro : mêmes décisions que sur l\'ancien terrain, distances ×0,1', () => {
+  const big = H.aiCommand({ self: { x: 0, z: -9, fx: 0, fz: 1 }, team: 0, slot: 0, n: 1, role: 'chase', puck: { x: 0, z: 0 }, arena: H.arenaFor(1, BASE) });
+  const small = H.aiCommand({ self: { x: 0, z: -0.9, fx: 0, fz: 1 }, team: 0, slot: 0, n: 1, role: 'chase', puck: { x: 0, z: 0 }, arena: { ...H.arenaFor(1, { fieldWidth: 2, fieldLength: 3.3 }), unit: 0.1 } });
+  assert.equal(Math.sign(big.f), Math.sign(small.f)); assert.equal(Math.sign(big.t), Math.sign(small.t));
+});
+
+test('nez arrondi : le contour d\'affichage a la même surface que les polygones de collision', () => {
+  const sh = H.scoopShape({ baseWidth: 0.18, noseLength: 0.07, puckDiameter: 0.0317, radius: 0.0185, depth: 0.0158 });
+  const area = poly => Math.abs(poly.reduce((a, [x, z], i) => { const [x2, z2] = poly[(i + 1) % poly.length]; return a + x * z2 - x2 * z; }, 0)) / 2;
+  const a = area(H.noseOutline(sh, 10)), b = H.noseParts(sh, 10).reduce((t, p) => t + area(p), 0);
+  assert.ok(Math.abs(a - b) < 1e-9, `${a} vs ${b}`);
+});
+
+test('IA : la rotation déjà en cours est freinée (pas de dépassement de cible)', () => {
+  const arena = H.arenaFor(1, BASE), base = { self: { x: 0, z: 0, fx: 0, fz: 1 }, team: 1, slot: 0, n: 1, role: 'chase', puck: { x: 3, z: 8 }, arena };
+  const still = H.aiCommand(base), spinning = H.aiCommand({ ...base, self: { ...base.self, w: 4 } });
+  assert.ok(still.t < 0 && spinning.t > still.t, 'même cible, mais déjà lancé vers elle : moins de couple');
+});
+
+test('IA : le point d\'approche reste dans le ring et on attaque le palet collé au mur', () => {
+  const arena = { width: 1.65, length: 3.3, unit: 0.1 };
+  const c = H.aiCommand({ self: { x: 0.72, z: 0.75, fx: 0, fz: 1 }, team: 1, slot: 0, n: 1, role: 'chase', puck: { x: 0.8, z: 0.89 }, arena, profile: H.aiProfile(10) });
+  assert.ok(c.f < 0 && Math.abs(c.t) < 1, 'déjà au point d\'approche : va sur le palet au lieu de tourner sur place');
+});
+
+test('IA : ralentit près du palet pour le conduire', () => {
+  const arena = { width: 1.65, length: 3.3, unit: 0.1 }, mk = z => H.aiCommand({ self: { x: 0, z, fx: 0, fz: 1 }, team: 1, slot: 0, n: 1, role: 'chase', puck: { x: 0, z: 0 }, arena, profile: H.aiProfile(10) });
+  assert.ok(Math.abs(mk(-0.2).f) < Math.abs(mk(-1.0).f), 'plus lent à 20 cm qu\'à 1 m');
 });

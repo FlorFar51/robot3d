@@ -17,8 +17,8 @@ export const RULES = {
 // Mise à l'échelle du terrain par format. Le réglage fieldWidth × fieldLength du 1v1 est la référence
 // (c'est le terrain déjà réglé par l'utilisateur) ; chaque robot supplémentaire par équipe ajoute 20 %.
 export function fieldScale(n) { return 1 + 0.2 * (n - 1); }
-export function arenaFor(n, { fieldWidth, fieldLength }) {
-  const scale = fieldScale(n);
+export function arenaFor(n, { fieldWidth, fieldLength, fieldGrow }) {
+  const scale = fieldGrow === 0 ? 1 : fieldScale(n);   // fieldGrow = 0 : ring unique du règlement Micro, quel que soit le format
   return { width: fieldWidth * scale, length: fieldLength * scale, scale };
 }
 
@@ -51,8 +51,9 @@ export function goalScorer(p, c) {
 
 // Palet sorti du jeu (hors du terrain et des buts) : sert de filet de sécurité.
 export function puckOut(p, c) {
-  return Math.abs(p.x) > c.arenaW / 2 + 1 || Math.abs(p.z) > c.arenaL / 2 + c.goalDepth + 1
-    || p.y < -2 || p.y > c.wallH + 8;
+  const u = c.unit || 1;
+  return Math.abs(p.x) > c.arenaW / 2 + u || Math.abs(p.z) > c.arenaL / 2 + c.goalDepth + u
+    || p.y < -2 * u || p.y > c.wallH + 8 * u;
 }
 
 export function createMatch(cfg) {
@@ -87,7 +88,7 @@ export function stepMatch(m, dt, puck) {
       return ev;
     }
     if (puckOut(puck, c)) { ev.push({ type: 'out' }); puckReturn(m, ev, 'reset'); return ev; }
-    m.stall = Math.abs(puck.z) <= c.arenaL / 2 && puck.speed < RULES.stallSpeed ? m.stall + dt : 0;   // pas de « palet bloqué » au fond d'un but
+    m.stall = Math.abs(puck.z) <= c.arenaL / 2 && puck.speed < RULES.stallSpeed * (c.unit || 1) ? m.stall + dt : 0;   // pas de « palet bloqué » au fond d'un but
     if (m.stall >= RULES.stallTime) { ev.push({ type: 'stall' }); puckReturn(m, ev, 'reset'); return ev; }
     if (m.clock <= 0) {
       if (m.overtime) { finish(m, ev, -1); return ev; }
@@ -129,8 +130,9 @@ export function aiProfile(level) {
 // palet -> but adverse, puis fonce), les autres défendent entre le palet et leur but.
 // Renvoie {f,t} dans la convention du jeu : f < 0 = rouler crochets en avant ; t > 0 = tourner à droite
 // (yaw négatif). self = {x,z,fx,fz} (fx,fz = direction des crochets).
+const NEAR_PUCK_SLOW = 0.8;
 export function aiCommand({ self, team, slot, n, role, puck, arena, profile = aiProfile(10), aimNoise = 0 }) {
-  const attack = team === 0 ? -1 : 1, own = -attack;
+  const attack = team === 0 ? -1 : 1, own = -attack, u = arena.unit || 1;   // u : échelle des distances (1 = ancien terrain)
   let tx, tz;
   if (role === 'chase') {
     const px = puck.x, pz = puck.z;
@@ -139,18 +141,76 @@ export function aiCommand({ self, team, slot, n, role, puck, arena, profile = ai
     const rx = px - self.x, rz = pz - self.z;
     const along = rx * dx + rz * dz, lateral = Math.abs(rx * dz - rz * dx);
     if (!profile.smart) { tx = px; tz = pz; }                                  // débutant : fonce droit sur le palet
-    else if (along > 0.5 && lateral < 1.4) { tx = px + dx * 2; tz = pz + dz * 2; }
-    else { tx = px - dx * 2.2; tz = pz - dz * 2.2; }
+    else if (along > 0.5 * u && lateral < 1.4 * u) { tx = px + dx * 2 * u; tz = pz + dz * 2 * u; }
+    else {
+      // point d'approche derrière le palet, ramené dans le ring ; si on y est déjà (palet collé à un mur), on attaque le palet
+      const sx = Math.max(-arena.width / 2 + u, Math.min(arena.width / 2 - u, px - dx * 2.2 * u));
+      const sz = Math.max(-arena.length / 2 + u, Math.min(arena.length / 2 - u, pz - dz * 2.2 * u));
+      if (Math.hypot(sx - self.x, sz - self.z) < 0.8 * u) { tx = px; tz = pz; } else { tx = sx; tz = sz; }
+    }
   } else {
-    const lim = arena.width / 2 - 2;
-    tx = Math.max(-lim, Math.min(lim, puck.x * 0.5 + (slot - (n - 1) / 2) * 4));
+    const lim = arena.width / 2 - 2 * u;
+    tx = Math.max(-lim, Math.min(lim, puck.x * 0.5 + (slot - (n - 1) / 2) * 4 * u));
     tz = own * arena.length * 0.32;
   }
+  tx = Math.max(-arena.width / 2 + u, Math.min(arena.width / 2 - u, tx));
+  tz = Math.max(-arena.length / 2 + u, Math.min(arena.length / 2 - u, tz));
   const dx = tx - self.x, dz = tz - self.z, dist = Math.hypot(dx, dz);
-  if (role !== 'chase' && dist < 2) return { f: 0, t: 0 };
+  if (role !== 'chase' && dist < 2 * u) return { f: 0, t: 0 };
   // angle signé (yaw positif = de +z vers +x) entre les crochets et la cible
   const ang = Math.atan2(self.fz * dx - self.fx * dz, self.fx * dx + self.fz * dz) + aimNoise;
-  const t = Math.max(-1, Math.min(1, -2 * ang));
-  const f = -(Math.abs(ang) > 1.2 ? 0 : (1 - Math.abs(ang) / 1.2) * (role === 'chase' ? 1 : 0.8)) * profile.throttle;
+  // correcteur proportionnel + amortissement sur la vitesse de rotation (self.w) : sans lui le robot dépasse sa cible et tourne en rond
+  const t = Math.max(-1, Math.min(1, -1.0 * ang + 0.5 * (self.w || 0)));
+  // près du palet on ralentit : à pleine vitesse le nez le renvoie au lieu de le conduire
+  const near = role === 'chase' && Math.hypot(puck.x - self.x, puck.z - self.z) < 3 * u ? NEAR_PUCK_SLOW : 1;
+  const f = -(Math.abs(ang) > 1.2 ? 0 : (1 - Math.abs(ang) / 1.2) * (role === 'chase' ? 1 : 0.8)) * profile.throttle * near;
   return { f, t };
+}
+
+// Nez arrondi du robot (règlement Robocore 15/01/2024, §2.8.5 et 2.8.6). Repère local au nez : x = largeur,
+// z = avant (0 = face avant du châssis, noseLength = pointe). Le creux est un arc de cercle (rayon `radius`) dont le
+// fond est à `depth` de la pointe. Règles : le palet ne peut pas être retenu au-delà de la moitié de son diamètre
+// (depth <= rayon du palet) ; ouverture à la pointe >= minOpening (40 mm en Micro, 80 mm en Pro/Mini).
+export function scoopShape({ baseWidth, noseLength, puckDiameter, radius, depth, minOpening = 0.04 }) {
+  const rp = puckDiameter / 2;
+  let d = Math.max(0.001, Math.min(depth, rp, noseLength - 0.005));            // §2.8.5 + 5 mm de fond plein
+  let r = Math.max(radius, rp);                                                  // le palet doit tenir dans le creux
+  const need = (minOpening * minOpening / 4 + d * d) / (2 * d);                  // rayon donnant exactement l'ouverture minimale
+  r = Math.max(r, need);
+  const cap = (baseWidth - 0.02) / 2;                                            // 1 cm de paroi de chaque côté
+  if (Math.sqrt(r * r - (r - d) * (r - d)) > cap) r = (cap * cap + d * d) / (2 * d);
+  const half = Math.sqrt(Math.max(0, r * r - (r - d) * (r - d))), zc = noseLength - d + r;
+  return { radius: r, depth: d, opening: 2 * half, half, zc, noseLength, baseWidth,
+           clamped: r !== radius || d !== depth };
+}
+
+// Polygones convexes (x,z) du nez : un pour chaque côté plein, `steps` tranches dans le creux. Source unique pour
+// l'affichage ET les collisions ; un robot importé fournira ses propres polygones convexes ici.
+export function noseParts(sh, steps = 10) {
+  const { baseWidth: W, noseLength: N, half, zc, radius: r } = sh, zArc = x => zc - Math.sqrt(Math.max(0, r * r - x * x));
+  const parts = [[[-W / 2, 0], [-half, 0], [-half, N], [-W / 2, N]], [[half, 0], [W / 2, 0], [W / 2, N], [half, N]]];
+  for (let i = 0; i < steps; i++) {
+    const a = -half + 2 * half * i / steps, b = -half + 2 * half * (i + 1) / steps;
+    parts.push([[a, 0], [b, 0], [b, zArc(b)], [a, zArc(a)]]);
+  }
+  return parts;
+}
+
+// Conformité au règlement Hockey Micro. Renvoie la liste des écarts (vide = conforme).
+export function microCheck(s) {
+  const bad = [], sh = scoopShape({ baseWidth: s.baseWidth, noseLength: s.hookLength, puckDiameter: s.hockeyPuckDiameter,
+    radius: s.scoopRadius, depth: s.scoopDepth });
+  if (s.mass > 0.454 + 1e-9) bad.push('masse > 454 g');
+  if (s.baseWidth > 0.2 + 1e-9) bad.push('largeur > 20 cm');
+  if (s.baseLength + s.hookLength > 0.2 + 1e-9) bad.push('longueur > 20 cm');
+  if (sh.opening < 0.04 - 1e-9) bad.push('ouverture du nez < 40 mm');
+  if (s.scoopDepth > s.hockeyPuckDiameter / 2 + 1e-9) bad.push('creux plus profond que la moitié du palet');
+  return bad;
+}
+
+// Contour (x,z) fermé du nez, pour l'affichage : face arrière, côtés, pointes et arc du creux.
+export function noseOutline(sh, steps = 10) {
+  const { baseWidth: W, noseLength: N, half, zc, radius: r } = sh, pts = [[-W / 2, 0], [W / 2, 0], [W / 2, N], [half, N]];
+  for (let i = 0; i <= steps; i++) { const x = half - 2 * half * i / steps; pts.push([x, zc - Math.sqrt(Math.max(0, r * r - x * x))]); }
+  return pts.concat([[-half, N], [-W / 2, N]]);
 }
