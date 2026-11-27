@@ -5,11 +5,11 @@
 
 export const RULES = {
   countdown: 3,      // s : compte à rebours avant chaque remise en jeu (valeur d'origine : 3 s)
-  intermission: 4,   // s : pause entre périodes
+  intermission: 4,   // s : pause entre la fin du temps réglementaire (égalité) et la mort subite
   stallSpeed: 0.4,   // m/s : en dessous, le palet est considéré immobile
   stallTime: 6,      // s : palet immobile -> remise en jeu au centre
   holdHeight: 4.5,   // m : hauteur où le palet attend la remise en jeu (valeur d'origine)
-  periods: 3,
+  periods: 1,        // règlement §4.1 : la partie dure 5 minutes, sans périodes (cfg.periodDuration = durée du match)
   goalBanner: 2,     // s : durée d'affichage du bandeau « BUT »
   flipTime: 3,       // s : un robot renversé aussi longtemps est replacé à sa position de départ
 };
@@ -59,11 +59,11 @@ export function puckOut(p, c) {
 export function createMatch(cfg) {
   return {
     cfg, phase: 'countdown', t: RULES.countdown, period: 1, clock: cfg.periodDuration,
-    score: [0, 0], overtime: false, winner: null, stall: 0, pendingPeriod: 0, lastScorer: -1, armed: true, flash: 0,
+    score: [0, 0], overtime: false, winner: null, stall: 0, lastScorer: -1, armed: true, flash: 0,
   };
 }
 
-// Seuls le départ, les pauses entre périodes et la fin verrouillent les commandes : jamais après un but.
+// Seuls le départ, la pause avant la mort subite et la fin verrouillent les commandes : jamais après un but.
 export function isLocked(m) { return m.phase === 'countdown' || m.phase === 'intermission' || m.phase === 'ended'; }
 
 // Palet ramené au centre (phase 'goal' après un but, 'reset' sinon) : les robots restent libres.
@@ -72,35 +72,31 @@ function faceoff(m, ev) { m.phase = 'countdown'; m.t = RULES.countdown; m.stall 
 function finish(m, ev, winner) { m.phase = 'ended'; m.winner = winner; ev.push({ type: 'end', winner }); }
 
 // Fait avancer le match de dt secondes de temps de jeu. Renvoie la liste des événements :
-// goal{team}, out, stall, puckReturn, periodEnd, faceoff (départ de match/période), release, end{winner}.
+// goal{team}, out, stall, puckReturn, overtime (égalité à la fin du temps), faceoff (départ de match ou de mort subite), release, end{winner}.
+// Règlement §4.1/4.4 : un seul temps (cfg.periodDuration, 5 min), pas de limite de score (cfg.winningScore > 0 la rétablit, optionnel),
+// et en cas d'égalité une mort subite sans limite de temps : le premier but gagne (le chrono compte alors le temps écoulé).
 // cfg.resetPuck : true = le palet revient au centre après un but ; false = il reste en place et le jeu continue.
 export function stepMatch(m, dt, puck) {
   const ev = [], c = m.cfg;
   m.flash = Math.max(0, m.flash - dt);
   if (m.phase === 'play') {
-    m.clock = Math.max(0, m.clock - dt);
+    if (m.overtime) m.clock += dt; else m.clock = Math.max(0, m.clock - dt);
     if (!m.armed && Math.abs(puck.z) < c.arenaL / 2 - c.puckRadius) m.armed = true;   // le palet est ressorti du but
     const team = m.armed ? goalScorer(puck, c) : -1;
     if (team >= 0) {
       m.score[team]++; m.lastScorer = team; m.flash = RULES.goalBanner; ev.push({ type: 'goal', team });
-      if (m.overtime || m.score[team] >= c.winningScore) { finish(m, ev, team); return ev; }
+      if (m.overtime || (c.winningScore > 0 && m.score[team] >= c.winningScore)) { finish(m, ev, team); return ev; }
       if (c.resetPuck) puckReturn(m, ev, 'goal'); else m.armed = false;   // sans remise : un palet resté dans le but ne marque qu'une fois
       return ev;
     }
     if (puckOut(puck, c)) { ev.push({ type: 'out' }); puckReturn(m, ev, 'reset'); return ev; }
     m.stall = Math.abs(puck.z) <= c.arenaL / 2 && puck.speed < RULES.stallSpeed * (c.unit || 1) ? m.stall + dt : 0;   // pas de « palet bloqué » au fond d'un but
     if (m.stall >= RULES.stallTime) { ev.push({ type: 'stall' }); puckReturn(m, ev, 'reset'); return ev; }
-    if (m.clock <= 0) {
-      if (m.overtime) { finish(m, ev, -1); return ev; }
-      if (m.period < RULES.periods) {
-        ev.push({ type: 'periodEnd', period: m.period });
-        m.phase = 'intermission'; m.t = RULES.intermission; m.pendingPeriod = m.period + 1;
-      } else if (m.score[0] !== m.score[1]) {
-        finish(m, ev, m.score[0] > m.score[1] ? 0 : 1);
-      } else {
-        ev.push({ type: 'periodEnd', period: m.period });
-        m.overtime = true; m.period = RULES.periods + 1; m.clock = c.overtimeDuration;
-        m.phase = 'intermission'; m.t = RULES.intermission;
+    if (!m.overtime && m.clock <= 0) {
+      if (m.score[0] !== m.score[1]) finish(m, ev, m.score[0] > m.score[1] ? 0 : 1);
+      else {   // pas d'égalité au hockey de robots : mort subite, remise en jeu comme au départ
+        ev.push({ type: 'overtime' });
+        m.overtime = true; m.clock = 0; m.phase = 'intermission'; m.t = RULES.intermission;
       }
     }
   } else if (m.phase === 'goal' || m.phase === 'reset') {
@@ -108,7 +104,6 @@ export function stepMatch(m, dt, puck) {
   } else if (m.phase === 'intermission') {
     m.t -= dt;
     if (m.t <= 0) {
-      if (m.pendingPeriod) { m.period = m.pendingPeriod; m.clock = c.periodDuration; m.pendingPeriod = 0; }
       faceoff(m, ev);
     }
   } else if (m.phase === 'countdown') {

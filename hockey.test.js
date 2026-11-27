@@ -6,7 +6,7 @@ import * as H from './hockey.js';
 const BASE = { fieldWidth: 20, fieldLength: 33 };       // terrain 1v1 d'origine
 const ROBOT = { w: 2.3, l: 1.9 + 1.55 };                // largeur du châssis ; longueur châssis + crochets
 const cfg = (o = {}) => ({
-  periodDuration: 10, overtimeDuration: 6, winningScore: 5, goalDelay: 1.4,
+  periodDuration: 10, winningScore: 0, goalDelay: 1.4,
   arenaW: 20, arenaL: 33, goalWidth: 6.5, goalDepth: 3.5, wallH: 2, puckRadius: 0.45, resetPuck: true, ...o,
 });
 const play = (m) => { m.phase = 'play'; return m; };
@@ -98,28 +98,38 @@ test('match : le score cible met fin au match immédiatement', () => {
   assert.equal(m.phase, 'ended'); assert.equal(m.winner, 1); assert.ok(ev.some((e) => e.type === 'end'));
 });
 
-test('match : 3 périodes avec pauses, victoire au score à la fin de la période 3', () => {
+test('match : un seul temps sans périodes ni pauses, victoire au score à la fin', () => {
   const m = play(H.createMatch(cfg({ periodDuration: 5 }))); m.score = [1, 0];
-  let periodEnds = 0;
-  for (let i = 0; i < 4000 && m.phase !== 'ended'; i++) {
-    for (const e of H.stepMatch(m, 0.01, still)) if (e.type === 'periodEnd') periodEnds++;
-    if (m.phase === 'countdown' && m.t < 0.02) m.t = 0;   // accélère les remises en jeu
+  const seen = new Set();
+  for (let i = 0; i < 800 && m.phase !== 'ended'; i++) {
+    for (const e of H.stepMatch(m, 0.01, still)) seen.add(e.type);
+    seen.add('phase:' + m.phase);
     if (m.stall > 5) m.stall = 0;                        // palet immobile ignoré dans ce test
   }
-  assert.equal(periodEnds, 2); assert.equal(m.phase, 'ended'); assert.equal(m.winner, 0); assert.equal(m.period, 3);
+  assert.equal(m.phase, 'ended'); assert.equal(m.winner, 0); assert.equal(m.period, 1);
+  assert.ok(!seen.has('phase:intermission') && !seen.has('overtime'), 'aucune pause ni prolongation quand il y a un vainqueur');
+  assert.equal(H.RULES.periods, 1);
 });
 
-test('match : égalité -> prolongation en but en or, puis nul si personne ne marque', () => {
-  const m = play(H.createMatch(cfg({ periodDuration: 5, overtimeDuration: 4 })));
-  m.period = 3; m.clock = 0.02;                          // fin de la 3e période, 0-0
+test('match : sans score cible, 9 buts d’écart ne terminent pas le match avant la fin du temps', () => {
+  const m = play(H.createMatch(cfg())); m.score = [0, 9];
+  H.stepMatch(m, 0.01, { x: 0, y: 0, z: 17.5, speed: 5 });
+  assert.equal(m.score[1], 10); assert.equal(m.phase, 'goal', 'le match continue');
+});
+
+test('match : égalité -> mort subite sans limite de temps, le premier but gagne ; jamais de nul', () => {
+  const m = play(H.createMatch(cfg({ periodDuration: 5 })));
+  m.clock = 0.02;                                        // fin du temps réglementaire, 0-0
   let ev = H.stepMatch(m, 0.05, still);
-  assert.ok(ev.some((e) => e.type === 'periodEnd')); assert.equal(m.overtime, true); assert.equal(m.clock, 4);
+  assert.ok(ev.some((e) => e.type === 'overtime')); assert.equal(m.overtime, true); assert.equal(m.clock, 0);
   assert.equal(m.phase, 'intermission'); tick(m, 4.1); assert.equal(m.phase, 'countdown'); tick(m, 3.1); assert.equal(m.phase, 'play');
-  m.stall = 0; ev = H.stepMatch(m, 4.01, { ...still, speed: 5 });
-  assert.equal(m.phase, 'ended'); assert.equal(m.winner, -1);
-  const m2 = play(H.createMatch(cfg())); m2.overtime = true; m2.period = 4; m2.clock = 3;
-  H.stepMatch(m2, 0.01, { x: 0, y: 0, z: -17.5, speed: 5 });
-  assert.equal(m2.phase, 'ended'); assert.equal(m2.winner, 0, 'but en or');
+  for (let i = 0; i < 600; i++) { m.stall = 0; H.stepMatch(m, 1, still); }      // 10 minutes sans but
+  assert.equal(m.phase, 'play', 'pas de limite de temps'); assert.ok(m.clock > 590, 'le chrono compte le temps écoulé');
+  H.stepMatch(m, 0.01, { x: 0, y: 0, z: -17.5, speed: 5 });
+  assert.equal(m.phase, 'ended'); assert.equal(m.winner, 0, 'but en or');
+  const m2 = play(H.createMatch(cfg())); m2.overtime = true; m2.period = 2;
+  H.stepMatch(m2, 0.01, { x: 0, y: 0, z: 17.5, speed: 5 });
+  assert.equal(m2.phase, 'ended'); assert.equal(m2.winner, 1);
 });
 
 test('IA : sens de rotation et de marche cohérents avec la conduite du jeu', () => {
@@ -175,7 +185,7 @@ test('but et score cible / prolongation : même résultat avec ou sans remise du
   for (const resetPuck of [true, false]) {
     const m = play(H.createMatch(cfg({ resetPuck, winningScore: 2 }))); m.score = [0, 1];
     H.stepMatch(m, 0.01, inGoal); assert.equal(m.phase, 'ended'); assert.equal(m.winner, 1);
-    const o = play(H.createMatch(cfg({ resetPuck }))); o.overtime = true; o.period = 4; o.clock = 3;
+    const o = play(H.createMatch(cfg({ resetPuck }))); o.overtime = true; o.period = 2; o.clock = 3;
     H.stepMatch(o, 0.01, { x: 0, y: 0, z: -17.5, speed: 5 }); assert.equal(o.phase, 'ended'); assert.equal(o.winner, 0);
   }
 });
@@ -192,11 +202,11 @@ test('palet immobile 6 s ou sorti du jeu : le palet revient au centre, les robot
   assert.ok(ev2.some((e) => e.type === 'out') && ev2.some((e) => e.type === 'puckReturn')); assert.equal(m2.phase, 'reset');
 });
 
-test('départ de match et de période : commandes verrouillées et robots replacés (faceoff)', () => {
+test('départ de match et de mort subite : commandes verrouillées et robots replacés (faceoff)', () => {
   const m = H.createMatch(cfg({ periodDuration: 5 })); assert.equal(H.isLocked(m), true);
-  const m2 = play(H.createMatch(cfg({ periodDuration: 5 }))); m2.score = [1, 0];
+  const m2 = play(H.createMatch(cfg({ periodDuration: 5 })));   // 0-0 à la fin du temps
   const ev = tick(m2, 5.1, onIce);
-  assert.ok(ev.some((e) => e.type === 'periodEnd')); assert.equal(m2.phase, 'intermission'); assert.equal(H.isLocked(m2), true);
+  assert.ok(ev.some((e) => e.type === 'overtime')); assert.equal(m2.phase, 'intermission'); assert.equal(H.isLocked(m2), true);
   const ev2 = tick(m2, 4.1, onIce);
   assert.ok(ev2.some((e) => e.type === 'faceoff')); assert.equal(m2.phase, 'countdown'); assert.equal(H.isLocked(m2), true);
 });

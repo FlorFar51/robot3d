@@ -24,18 +24,18 @@ Sources : IIHF Official Rule Book 2026/27 v1.0 (juin 2026). Lu : règle 1 (patin
 
 | Règle IIHF | Adaptation | Statut |
 |---|---|---|
-| 3 × 20 min de temps effectif, chrono arrêté au but | 3 périodes de `periodDuration` s (défaut 120, réglable 30-300), temps effectif, pause de 4 s | Fait |
+| Durée de la partie | 5 minutes d'un seul tenant, sans périodes (règlement RoboCore Hockey de Robôs, §4.1) | 1 temps de `periodDuration` s (défaut 300, réglable 60-600), temps effectif | Fait (27/11/2026) |
 | But : palet entièrement franchi, entre les poteaux | Centre du palet au-delà de la ligne + rayon, palet entièrement dans l'ouverture. Testé à chaque pas physique (1/120 s) | Fait |
 | But contre son camp compte pour l'adversaire | Équipe 0 défend z = +L/2, équipe 1 défend z = −L/2 | Fait |
 | Remise en jeu après un but | Réglage `puckReset` (Configuration › Match – Hockey). **1** : le palet remonte à 4,5 m au centre pendant `goalResetDelay` (1,4 s) puis est lâché. **0** : le palet reste où il est et le jeu continue ; un palet resté dans le but ne marque qu'une fois, il doit ressortir. Dans les deux cas les robots **ne sont ni bloqués, ni repositionnés, ni ralentis** et le chrono s'arrête seulement pendant le retour du palet | Fait |
 | Palet sorti / coincé (3 s) | Bandes pleines : le palet ne sort pas. Palet immobile (< 0,4 m/s) 6 s sur le terrain (pas au fond d'un but) ou hors du terrain → le palet revient au centre comme après un but, sans point et sans toucher aux robots | Fait |
-| Départ de match et de période | Seul moment où les commandes sont verrouillées : robots replacés, décompte 3-2-1, puis lâcher | Fait |
+| Départ de match et de mort subite | Seul moment où les commandes sont verrouillées : robots replacés, décompte 3-2-1, puis lâcher | Fait |
 | Mode solo (1v0) | Un seul robot, sans adversaire (section 4) | Fait |
-| Prolongation | But en or, `overtimeDuration` s (défaut 120), puis match nul | Fait (règle 84 non lue : choix personnel) |
+| Égalité : mort subite (§4.4) | Pause de 4 s puis remise en jeu comme au départ ; le premier but gagne, sans limite de temps (le chrono affiche le temps écoulé, « +m:ss »). Pas de match nul | Fait (27/11/2026) |
 | Gardien, hors-jeu, icing, pénalités, changements | Pas en V1 | Reporté |
 | Contacts autorisés, interférence | Contacts libres. Un robot renversé plus de 3 s est replacé à son départ | Fait (non issu des règles IIHF) |
 
-`winningScore` (défaut 5, existant) reste un score cible : le match s'arrête dès qu'une équipe l'atteint.
+`winningScore` (défaut 0 = aucun, le règlement ne fixe que la durée) reste disponible comme score cible optionnel : > 0, le match s'arrête dès qu'une équipe l'atteint. `overtimeDuration` est supprimé (mort subite illimitée).
 
 ## 3. Dimensions
 
@@ -228,4 +228,10 @@ Tout est maintenant en mètres réels (SI). Source : `Regras - Hockey.pdf` (§2.
 - But du fond : entré en biais, le robot peut se retrouver en travers entre les poteaux ; la marche avant/arrière ne fait que le pousser contre l'autre poteau, il faut pivoter (la rotation y fonctionne, 150° en 1,5 s).
 - Caméras : curseurs hauteur / éloignement / angle pour la caméra latérale, la caméra derrière le but et la caméra de suivi (groupes « Caméra … » des options). Les valeurs par défaut sont celles d'avant (2,2 / 1,6 / 0° ; 1,9 / 0,9 / 0° ; suivi 0,75 / 1,2 / 0°). Les anciennes valeurs de caméra étaient réimposées par un `Object.assign` après lecture de l'URL, donc les réglages étaient perdus au lancement : elles sont maintenant dans `SETTINGS_DEF`. L'angle des caméras fixes est une rotation horizontale de la vue ; celui de la caméra de suivi est un angle autour du robot (0 = côté crochets).
 - Glissement en mouvement (27/11, suite) : en virage le robot dérapait de 19° à 42° (0° en ligne droite). `HOCKEY_SIDE_GRIP` passe de 15 à 60 et la rotation demandée diminue avec la vitesse (`HOCKEY_TURN_SPEED_LIMIT` = 1,5 : ×1 à l'arrêt, ~×0,3 à vitesse max, comme une roue extérieure limitée par le moteur). Résultat mesuré : dérapage 3–12°, rotation à pleine vitesse 2,6–3,8 rad/s, rotation sur place inchangée (8,9 rad/s), 0 retournement sur 30 conduites aléatoires, arrêt latéral en 0,01 m.
+
+## Durée du match et rayons de roues (27/11/2026)
+
+- Règlement (Regras do Jogo, §4.1 à 4.4) : la partie dure 5 minutes, sans périodes ; pas de score cible ; en cas d'égalité, mort subite jusqu'au premier but. `hockey.js` : `RULES.periods` = 1, plus de pauses entre périodes, évènement `overtime` à l'égalité, chrono qui compte le temps écoulé en mort subite. `hockey.js` est importé avec `?v=` dans `main.js` : à changer à chaque modification (sinon le navigateur garde l'ancienne logique).
+- Robots qui se penchent en avant, roues qui montent, retournements au contact des murs et des buts : les roues du véhicule sont des rayons verticaux ; quand le châssis s'enfonce de quelques mm dans un mur, le rayon d'une roue partait de l'intérieur du mur et renvoyait une réaction de plus de 250 N (suspension normale ≈ 2 N), qui catapultait le robot (4,5 m/s en un pas). Cause d'autant plus fréquente que le robot importé (`robotA.glb`) a des roues à 8,5 cm du centre pour un châssis de 19 cm. `updateVehicle` n'interroge maintenant que le collider du sol en hockey (`world.hockeyFloorHandle`). Mesuré avec le robot importé : 3 conduites aléatoires sur 8 retournées (jusqu'à 136°) avant, 0 sur 20 après (inclinaison max 4°) ; 90 essais crochets contre murs/poteaux/fond de but sans anomalie.
+- Les tests de conduite doivent aussi être faits avec le robot importé : ses dimensions, son centre de gravité et sa masse écrasent les réglages (`RI.applyToSettings`).
 
